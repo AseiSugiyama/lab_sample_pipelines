@@ -2,7 +2,17 @@
 
 The Data Generator component downloads [processed Palmer Penguins dataset](https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv) and save it for other components. Downloaded data is managed by MLMD (ML Metadata) for each run of pipeline.
 
-## TOC of files
+## Runtime Inputs and Returns
+
+- Inputs:
+  - N/A
+- Outputs:
+  - train_data_path [str]: Path to saved train data.
+  - eval_data_path [str]: Path to saved eval data.
+- Metrics
+  - N/A
+
+## Files
 
 ```console
 $ tree .
