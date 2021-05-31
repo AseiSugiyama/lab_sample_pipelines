@@ -1,0 +1,10 @@
+name: data_generator
+outputs:
+- {name: train_data_path, type: GCPPath}
+- {name: eval_data_path, type: GCPPath}
+implementation:
+  container:
+    image: ${tagged_name}
+    args:
+      - {outputPath: train_data_path}
+      - {outputPath: eval_data_path}
