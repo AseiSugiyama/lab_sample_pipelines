@@ -8,9 +8,8 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "~3.8.0"
 pip = "^21.1.1"
-gcsfs = "^2021.5.0"
-google-cloud-bigquery = "^2.6.1"
-google-cloud-storage = "^1.35.0"
+numpy = "^1.20.3"
+scikit-learn = "^0.24.2"
 
 [tool.poetry.dev-dependencies]
 pydocstyle = "*"
