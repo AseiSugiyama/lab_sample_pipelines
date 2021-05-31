@@ -15,6 +15,8 @@ Setup followings;
 
 ## Pipeline Parameters
 
+- Suffix : `str`
+  - Suffix for preprocessed features. This is used for pseudo "preprocessing". Default value is `_xf`.
 
 ## Components
 
@@ -57,6 +59,7 @@ The Trainer trains the ML model using the dataset from the Transform. ML model i
 Consumes:
 
 - Preprocessed train data
+- Suffix
 
 Emits:
 
@@ -70,9 +73,9 @@ Consumes:
 
 - Trained model
 - Preprocessed eval dataset
+- Suffix
 
 Emits:
 
 - Accuracy
 - Confusion matrix
-
