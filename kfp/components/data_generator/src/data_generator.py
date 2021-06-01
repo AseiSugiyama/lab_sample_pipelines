@@ -4,6 +4,7 @@ import argparse
 from dataclasses import dataclass
 from typing import IO, Tuple, get_type_hints
 from urllib import request
+from pathlib import Path
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -96,8 +97,9 @@ def write_csv(destination: str, data: np.ndarray):
         header = ",".join((name for name in data.dtype.names))
     else:
         raise ValueError("Column names are missing")
-
-    np.savetxt(destination, data, delimiter=",", header=header, comments="")
+    path = Path(destination)
+    path.parent.mkdir(exist_ok=True, parents=True)
+    np.savetxt(path, data, delimiter=",", header=header, comments="")
 
 
 #
