@@ -40,12 +40,24 @@ We can start to develop components by `poetry install`.
 
 For testing framework, we hire [pytest](https://docs.pytest.org/en/6.2.x/). We can test this component by `poetry run pytest`.
 
+## Run locally
+
+```
+poetry run python src/data_generator.py ./tmp/train.csv ./tmp/eval.csv
+```
+
 ## Build dockerfile
 
 To build a container image with same version described in `pyproject.toml`, use following;
 
 ```shell
-docker build --target production -t v$(awk -F'[ ="]+' '$1 == "version" { print $2 }' pyproject.toml) .
+docker build --target production -t $(awk -F'[ ="]+' '$1 == "name" { print $2 }' pyproject.toml | sed 's/_/-/g'):latest .
+```
+
+## Run docker
+
+```shell
+docker run data-generator ./tmp/train.csv ./tmp/eval.csv
 ```
 
 ## Deploy to GCR
