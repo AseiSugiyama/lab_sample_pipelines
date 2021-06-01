@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "kfp_sample_transform"
 version = "0.0.0"
-description = "data-generator component of kfp sample pipeline"
+description = "transform component of kfp sample pipeline"
 authors = ["Repro AI Lab Team <dev-lab@repro.io>"]
 license = "MIT"
 

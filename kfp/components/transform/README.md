@@ -1,6 +1,6 @@
 # Transform
 
-The Data Generator component downloads [processed Palmer Penguins dataset](https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv) and save it for other components. Downloaded data is managed by MLMD (ML Metadata) for each run of pipeline.
+The Transform component preprocesses [processed Palmer Penguins dataset](https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv) and save it for other components. Because the Palmer Penguin dataset is already preprocessed, we simply add suffix for each column names.
 
 ## Runtime Inputs and Returns
 
