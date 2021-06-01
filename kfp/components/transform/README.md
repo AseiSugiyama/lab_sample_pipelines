@@ -1,4 +1,4 @@
-# Data Generator
+# Transform
 
 The Data Generator component downloads [processed Palmer Penguins dataset](https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv) and save it for other components. Downloaded data is managed by MLMD (ML Metadata) for each run of pipeline.
 
@@ -45,7 +45,7 @@ For testing framework, we hire [pytest](https://docs.pytest.org/en/6.2.x/). We c
 ## Run locally
 
 ```
-poetry run python src/transform.py ./tmp/train.csv ./tmp/eval.csv
+poetry run python src/transform.py ./tmp/train.csv ./tmp/eval.csv "_xf" ./tmp/train_xf.csv ./tmp/eval_xf.csv
 ```
 
 ## Build dockerfile
@@ -59,7 +59,13 @@ docker build --target production -t $(awk -F'[ ="]+' '$1 == "name" { print $2 }'
 ## Run docker
 
 ```shell
-docker run data-generator ./tmp/train.csv ./tmp/eval.csv
+docker run \
+  --mount type=bind,source="$(pwd)"/tmp,target=/component/tmp \
+  kfp-sample-transform \
+  ./tmp/train.csv \
+  ./tmp/eval.csv "_xf" \
+  ./tmp/train_xf.csv \
+  ./tmp/eval_xf.csv
 ```
 
 ## Deploy to GCR

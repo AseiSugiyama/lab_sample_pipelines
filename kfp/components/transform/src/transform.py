@@ -3,13 +3,10 @@
 import argparse
 from dataclasses import dataclass
 from typing import IO, Tuple, get_type_hints
-from urllib import request
 from pathlib import Path
 
 import numpy as np
-from sklearn.model_selection import train_test_split
 
-PENGUIN_DATASET_URI = "https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv"
 TARGET = "species"
 
 
@@ -22,13 +19,17 @@ TARGET = "species"
 class ComponentArguments:
     """Argument of the component. Note: Data Generator has no inputs."""
 
+    train_data_path: str
+    eval_data_path: str
+    suffix: str
+
 
 @dataclass
 class OutputDestinations:
     """Outputs of the component."""
 
-    train_data_path: str
-    eval_data_path: str
+    transformed_train_data_path: str
+    transformed_eval_data_path: str
 
 
 @dataclass
@@ -66,6 +67,38 @@ class Artifacts:
 # ------------------------------------------------------------------------------
 
 
+def main(args: ComponentArguments) -> Tuple[np.ndarray, np.ndarray]:
+    def download(data: str):
+        with Path(data).open() as f:
+            return fetch_dataset(f)
+
+    datasets = map(download, [args.train_data_path, args.eval_data_path])
+
+    def _transform(data):
+        return transform(data, args.suffix)
+
+    train_data, eval_data = map(_transform, datasets)
+
+    return train_data, eval_data
+
+
+#
+# SUB FUNCTIONS
+# ------------------------------------------------------------------------------
+
+
+def transform(data: np.ndarray, suffix: str) -> np.ndarray:
+    if data.dtype.names:
+        names = (name + suffix for name in data.dtype.names)
+        formats = (data[name].dtype for name in data.dtype.names)
+    else:
+        raise ValueError("Column names are missing")
+
+    dtypes = list(zip(names, formats))
+
+    return np.array(data, dtype=dtypes)
+
+
 def fetch_dataset(source: IO) -> np.ndarray:
     data = np.genfromtxt(source, names=True, delimiter=",")
 
@@ -77,19 +110,6 @@ def fetch_dataset(source: IO) -> np.ndarray:
     ]
 
     return data.astype(types)
-
-
-def main(args: ComponentArguments) -> Tuple[np.ndarray, np.ndarray]:
-    with request.urlopen(PENGUIN_DATASET_URI) as f:
-        data = fetch_dataset(f)
-    # train-test split
-    train_data, eval_data = train_test_split(data, test_size=0.2, random_state=42)
-    return train_data, eval_data
-
-
-#
-# SUB FUNCTIONS
-# ------------------------------------------------------------------------------
 
 
 def write_csv(destination: str, data: np.ndarray):
@@ -115,5 +135,5 @@ if __name__ == "__main__":
     # When pipeline runs, runtime gives path to save dir for each outputPath
     # placeholder. For more detail, see
     # https://cloud.google.com/vertex-ai/docs/pipelines/build-pipeline#compare
-    write_csv(artifacts.output_destinations.train_data_path, train_data)
-    write_csv(artifacts.output_destinations.eval_data_path, eval_data)
+    write_csv(artifacts.output_destinations.transformed_train_data_path, train_data)
+    write_csv(artifacts.output_destinations.transformed_eval_data_path, eval_data)
