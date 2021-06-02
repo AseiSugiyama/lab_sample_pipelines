@@ -45,9 +45,11 @@ For testing framework, we hire [pytest](https://docs.pytest.org/en/6.2.x/). We c
 
 ```shell
 poetry run python src/evaluator.py \
-  ./tmp/train_xf.csv \
+  ./tmp/model.pkl \
+  ./tmp/eval_xf.csv \
   "_xf" \
-  ./tmp/model.pkl
+  ./tmp/confusion_matrix.png \
+  ./tmp/mlpipeline-metrics.json
 ```
 
 ## Build dockerfile
@@ -64,9 +66,11 @@ docker build --target production -t $(awk -F'[ ="]+' '$1 == "name" { print $2 }'
 docker run \
   --mount type=bind,source="$(pwd)"/tmp,target=/component/tmp \
   kfp-sample-evaluator \
-  ./tmp/train_xf.csv \
+  ./tmp/model.pkl \
+  ./tmp/eval_xf.csv \
   "_xf" \
-  ./tmp/model.pkl
+  ./tmp/confusion_matrix.png \
+  ./tmp/mlpipeline-metrics.json
 ```
 
 ## Deploy to GCR

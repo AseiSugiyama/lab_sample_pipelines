@@ -6,6 +6,7 @@ import pickle
 from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, Optional, Protocol, Tuple, get_type_hints
+from matplotlib import pyplot as plt
 
 import numpy as np
 from sklearn.base import BaseEstimator
@@ -95,11 +96,13 @@ def main(args: ComponentArguments) -> Tuple[ConfusionMatrixDisplay, float]:
         keys = data.dtype.names
 
     feature_keys = [key for key in keys if key != label_key]
-    x_eval = data[feature_keys]
+    x_eval = data[feature_keys].tolist()
     y_eval = data[label_key]
 
     score = model.score(x_eval, y_eval)
-    matrix = plot_confusion_matrix(model, x_eval, y_eval, cmap="Blues", normalize=True)
+    matrix = plot_confusion_matrix(
+        model, x_eval, y_eval, cmap=plt.cm.Blues, normalize="true"
+    )
 
     return matrix, score
 
