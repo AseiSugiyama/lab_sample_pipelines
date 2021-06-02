@@ -42,8 +42,11 @@ For testing framework, we hire [pytest](https://docs.pytest.org/en/6.2.x/). We c
 
 ## Run locally
 
-```
-poetry run python src/trainer.py ./tmp/train.csv ./tmp/eval.csv "_xf" ./tmp/train_xf.csv ./tmp/eval_xf.csv
+```shell
+poetry run python src/trainer.py \
+  ./tmp/train_xf.csv \
+  "_xf" \
+  ./tmp/model.pkl
 ```
 
 ## Build dockerfile
@@ -60,10 +63,9 @@ docker build --target production -t $(awk -F'[ ="]+' '$1 == "name" { print $2 }'
 docker run \
   --mount type=bind,source="$(pwd)"/tmp,target=/component/tmp \
   kfp-sample-trainer \
-  ./tmp/train.csv \
-  ./tmp/eval.csv "_xf" \
   ./tmp/train_xf.csv \
-  ./tmp/eval_xf.csv
+  "_xf" \
+  ./tmp/model.pkl
 ```
 
 ## Deploy to GCR

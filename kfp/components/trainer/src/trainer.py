@@ -4,7 +4,7 @@ import argparse
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
-from typing import IO, Tuple, get_type_hints
+from typing import IO, get_type_hints
 
 import numpy as np
 from sklearn.base import BaseEstimator
@@ -72,19 +72,7 @@ def main(args: ComponentArguments) -> BaseEstimator:
     label_key = TARGET + args.suffix
     with Path(args.transformed_train_data_path).open() as f:
         data = load_dataset(f, label_key)
-
-    if data.dtype.names is None:
-        raise ValueError("Column names are missing")
-    else:
-        keys = data.dtype.names
-
-    feature_keys = [key for key in keys if key != label_key]
-    x_train, y_train = data[feature_keys], data[label_key]
-
-    model = RandomForestClassifier(random_state=42)
-    model.fit(x_train, y_train)
-
-    return model
+    return train(data, label_key)
 
 
 #
@@ -92,10 +80,27 @@ def main(args: ComponentArguments) -> BaseEstimator:
 # ------------------------------------------------------------------------------
 
 
+def train(data, label_key) -> BaseEstimator:
+
+    if data.dtype.names is None:
+        raise ValueError("Column names are missing")
+    else:
+        keys = data.dtype.names
+
+    feature_keys = [key for key in keys if key != label_key]
+    x_train = data[feature_keys].tolist()
+    y_train = data[label_key]
+
+    model = RandomForestClassifier(random_state=42)
+    model.fit(x_train, y_train)
+
+    return model
+
+
 def load_dataset(source: IO, label_key: str) -> np.ndarray:
     data = np.genfromtxt(source, names=True, delimiter=",")
 
-    if TARGET not in data.dtype.names:
+    if label_key not in data.dtype.names:
         raise IndexError(f"{label_key} is not in column names as {data.dtype.names}")
 
     types = [
