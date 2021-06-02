@@ -57,7 +57,7 @@ docker build --target production -t $(awk -F'[ ="]+' '$1 == "name" { print $2 }'
 ## Run docker
 
 ```shell
-docker run data-generator ./tmp/train.csv ./tmp/eval.csv
+docker run kfp-sample-data-generator ./tmp/train.csv ./tmp/eval.csv
 ```
 
 ## Deploy to GCR
