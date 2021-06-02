@@ -1,7 +1,7 @@
 name: data_generator
 outputs:
-- {name: train_data_path, type: GCPPath}
-- {name: eval_data_path, type: GCPPath}
+- {name: train_data_path, type: {GCPPath: {data_type: CSV}}}
+- {name: eval_data_path, type: {GCPPath: {data_type: CSV}}}
 implementation:
   container:
     image: ${tagged_name}
