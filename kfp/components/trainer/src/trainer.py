@@ -1,11 +1,14 @@
 """Data Generator implementation."""
 
 import argparse
+import pickle
 from dataclasses import dataclass
-from typing import IO, Tuple, get_type_hints
 from pathlib import Path
+from typing import IO, Tuple, get_type_hints
 
 import numpy as np
+from sklearn.base import BaseEstimator
+from sklearn.ensemble import RandomForestClassifier
 
 TARGET = "species"
 
@@ -19,8 +22,7 @@ TARGET = "species"
 class ComponentArguments:
     """Argument of the component. Note: Data Generator has no inputs."""
 
-    train_data_path: str
-    eval_data_path: str
+    transformed_train_data_path: str
     suffix: str
 
 
@@ -28,8 +30,7 @@ class ComponentArguments:
 class OutputDestinations:
     """Outputs of the component."""
 
-    transformed_train_data_path: str
-    transformed_eval_data_path: str
+    trained_model_path: str
 
 
 @dataclass
@@ -67,19 +68,23 @@ class Artifacts:
 # ------------------------------------------------------------------------------
 
 
-def main(args: ComponentArguments) -> Tuple[np.ndarray, np.ndarray]:
-    def download(data: str):
-        with Path(data).open() as f:
-            return fetch_dataset(f)
+def main(args: ComponentArguments) -> BaseEstimator:
+    label_key = TARGET + args.suffix
+    with Path(args.transformed_train_data_path).open() as f:
+        data = load_dataset(f, label_key)
 
-    datasets = map(download, [args.train_data_path, args.eval_data_path])
+    if data.dtype.names is None:
+        raise ValueError("Column names are missing")
+    else:
+        keys = data.dtype.names
 
-    def _transform(data):
-        return transform(data, args.suffix)
+    feature_keys = [key for key in keys if key != label_key]
+    x_train, y_train = data[feature_keys], data[label_key]
 
-    train_data, eval_data = map(_transform, datasets)
+    model = RandomForestClassifier(random_state=42)
+    model.fit(x_train, y_train)
 
-    return train_data, eval_data
+    return model
 
 
 #
@@ -87,39 +92,25 @@ def main(args: ComponentArguments) -> Tuple[np.ndarray, np.ndarray]:
 # ------------------------------------------------------------------------------
 
 
-def transform(data: np.ndarray, suffix: str) -> np.ndarray:
-    if data.dtype.names:
-        names = (name + suffix for name in data.dtype.names)
-        formats = (data[name].dtype for name in data.dtype.names)
-    else:
-        raise ValueError("Column names are missing")
-
-    dtypes = list(zip(names, formats))
-
-    return np.array(data, dtype=dtypes)
-
-
-def fetch_dataset(source: IO) -> np.ndarray:
+def load_dataset(source: IO, label_key: str) -> np.ndarray:
     data = np.genfromtxt(source, names=True, delimiter=",")
 
     if TARGET not in data.dtype.names:
-        raise IndexError(f"{TARGET} is not in column names as {data.dtype.names}")
+        raise IndexError(f"{label_key} is not in column names as {data.dtype.names}")
 
     types = [
-        (name, "<i8") if name == TARGET else (name, "<f8") for name in data.dtype.names
+        (name, "<i8") if name == label_key else (name, "<f8")
+        for name in data.dtype.names
     ]
 
     return data.astype(types)
 
 
-def write_csv(destination: str, data: np.ndarray):
-    if data.dtype.names:
-        header = ",".join((name for name in data.dtype.names))
-    else:
-        raise ValueError("Column names are missing")
+def write_pickle(destination: str, model: BaseEstimator):
     path = Path(destination)
     path.parent.mkdir(exist_ok=True, parents=True)
-    np.savetxt(path, data, delimiter=",", header=header, comments="")
+    with path.open("wb+") as f:
+        pickle.dump(model, f)
 
 
 #
@@ -129,11 +120,10 @@ def write_csv(destination: str, data: np.ndarray):
 if __name__ == "__main__":
     artifacts = Artifacts.from_args()
 
-    train_data, eval_data = main(artifacts.component_arguments)
+    model = main(artifacts.component_arguments)
 
     # Write output.
     # When pipeline runs, runtime gives path to save dir for each outputPath
     # placeholder. For more detail, see
     # https://cloud.google.com/vertex-ai/docs/pipelines/build-pipeline#compare
-    write_csv(artifacts.output_destinations.transformed_train_data_path, train_data)
-    write_csv(artifacts.output_destinations.transformed_eval_data_path, eval_data)
+    write_pickle(artifacts.output_destinations.trained_model_path, model)

@@ -1,11 +1,9 @@
 name: trainer
 inputs:
-- {name: train_data_path, type: GCPPath}
-- {name: eval_data_path, type: GCPPath}
+- {name: transformed_train_data_path, type: {GCPPath: {data_type: CSV}}}
 - {name: suffix, type: String}
 outputs:
-- {name: transformed_train_data_path, type: GCPPath}
-- {name: transformed_eval_data_path, type: GCPPath}
+- {name: trained_model_path, type: {GCPPath: {data_type: PKL}}}
 implementation:
   container:
     image: ${tagged_name}
