@@ -1,4 +1,4 @@
-# Penguin Classification pipeline on Kubeflow Pipelines
+# Penguin Classification Pipeline on Kubeflow Pipelines
 
 Penguin classification pipeline introduces the basics of the KFP SDK v2 programming. It uses almost all of the Kubeflow Pipelines.
 
