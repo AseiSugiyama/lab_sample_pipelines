@@ -4,7 +4,7 @@ Penguin classification pipeline introduces the basics of the KFP SDK v2 programm
 
 ## How to deploy.
 
-
+To deploy kfp sample pipeline, check [this document](DEPLOYMENT.md).
 ## Requirements
 
 Setup followings;
@@ -15,6 +15,7 @@ Setup followings;
 
 ## Dataflow
 
+<img src="dataflow.png" height=600>
 
 ## Pipeline Parameters
 

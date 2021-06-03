@@ -4,9 +4,9 @@ Two simple sample pipelines are introduced on this repo with both KFP SDK and TF
 
 ## KFP SDK
 
+<img src="kfp/dataflow.png" height=600>
+
 Penguin classification pipeline with KFP SDK. To try to run this pipeline, check [this document](kfp/README.md).
-
-
 ## TFX SDK
 
 - TBD
