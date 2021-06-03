@@ -2,6 +2,9 @@
 
 Penguin classification pipeline introduces the basics of the KFP SDK v2 programming. It uses almost all of the Kubeflow Pipelines.
 
+## How to deploy.
+
+
 ## Requirements
 
 Setup followings;
