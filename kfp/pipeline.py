@@ -1,6 +1,5 @@
 """"KFP penguin classification sample pipeline"""
 
-import os
 from pathlib import Path
 from typing import Union
 from string import Template
@@ -15,9 +14,9 @@ from kfp.v2 import compiler
 
 PIPELINE_NAME = "kfp-sample-pipeline"
 COMPONENT_PREFIX = "kfp-sample"
-GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID", "")
-GCP_GCR_ENDPOINT = os.getenv("GCP_GCR_ENDPOINT", "")
-GCP_GCS_PIPELINE_ROOT = os.getenv("GCP_GCS_PIPELINE_ROOT")
+GCP_PROJECT_ID = "your-sample-pipeline-project"  # Enter your GCP project ID
+GCP_GCR_ENDPOINT = "us.gcr.io"  # Enter your GCR endpoint
+GCP_GCS_PIPELINE_ROOT = "your-bucket-name"  # Enter your GCS bucket without gs://
 
 
 class GeneratedData(Enum):
@@ -107,7 +106,7 @@ def _evaluator_op(
     name=PIPELINE_NAME,
     pipeline_root=f"gs://{GCP_GCS_PIPELINE_ROOT}/",
 )
-def kfp_sample_pipeline(suffix: str):
+def kfp_sample_pipeline(suffix: str = "_xf"):
     data_generator = _data_generator_op()
     transform = _transform_op(
         train_data_path=data_generator.outputs[GeneratedData.TrainData.value],
