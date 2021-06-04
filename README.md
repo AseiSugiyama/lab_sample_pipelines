@@ -23,4 +23,4 @@ Penguin classification pipeline with KFP SDK. To try to run this pipeline, check
 
 ### TFX SDK
 
--[ ] Add sample example pipeline 😃
+- [ ] Add sample example pipeline 😃
