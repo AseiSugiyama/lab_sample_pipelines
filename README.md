@@ -10,3 +10,17 @@ Penguin classification pipeline with KFP SDK. To try to run this pipeline, check
 ## TFX SDK
 
 - TBD
+
+## Fetaure Works
+
+### KFP SDK
+
+- [ ] Add unit test
+- [ ] Migrate from `GCPPath` into `Artifact`
+- [ ] Pipeline E2E test
+- [ ] Add Pusher component
+- [ ] Add CI/CD sample using GitHub Actions
+
+### TFX SDK
+
+-[ ] Add sample example pipeline 😃
