@@ -6,7 +6,6 @@ inputs:
 outputs:
 - {name: confusion_matrix_path, type: classificationmetrics}
 - {name: mlpipeline_metrics, type: metrics}
-- {name: dummy_output, type: String}
 implementation:
   container:
     image: ${tagged_name}
@@ -14,5 +13,5 @@ implementation:
       - {inputUri: trained_model_path}
       - {inputUri: transformed_eval_data_path}
       - {inputValue: suffix}
-      - {outputPath: confusion_matrix_path}
+      - {outputUri: confusion_matrix_path}
       - {outputUri: mlpipeline_metrics}

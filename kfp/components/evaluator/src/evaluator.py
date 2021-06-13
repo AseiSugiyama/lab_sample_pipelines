@@ -49,8 +49,6 @@ class OutputDestinations:
 
     confusion_matrix_path: str
     mlpipeline_metrics: str
-    metadata: str
-    dummy_output: str
 
 
 @dataclass
@@ -186,8 +184,11 @@ if __name__ == "__main__":
     save_artifact(artifacts.output_destinations.confusion_matrix_path, cm_artifact)
     save_artifact(artifacts.output_destinations.mlpipeline_metrics, score_artifact)
 
-
-    # Write output.
+    # print("Metadataの書き込み")
+    # with open(path, "w") as f:
+    #     json.dump(output_metadata, f)
+    # print("Metadataの書き込み Done")
+    # # Write output.
     # When pipeline runs, runtime gives path to save dir for each outputPath
     # placeholder. For more detail, see
     # https://cloud.google.com/vertex-ai/docs/pipelines/build-pipeline#compare
