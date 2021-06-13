@@ -2,15 +2,22 @@
 
 import argparse
 from dataclasses import dataclass
+from logging import getLogger
+from os.path import dirname
 from typing import IO, Tuple, get_type_hints
 from urllib import request
-from pathlib import Path
 
 import numpy as np
+from artifact import KfpArtifactFactory, save_artifact
+from gcsfs import GCSFileSystem
 from sklearn.model_selection import train_test_split
+
+logger = getLogger(__file__)
+logger.setLevel("DEBUG")
 
 PENGUIN_DATASET_URI = "https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv"
 TARGET = "species"
+DATASET_SCHEMA = "dataset"
 
 
 #
@@ -83,8 +90,10 @@ def main(args: ComponentArguments) -> Tuple[np.ndarray, np.ndarray]:
     with request.urlopen(PENGUIN_DATASET_URI) as f:
         data = fetch_dataset(f)
     # train-test split
-    train_data, eval_data = train_test_split(data, test_size=0.2, random_state=42)
-    return train_data, eval_data
+    train_data_path, eval_data_path = train_test_split(
+        data, test_size=0.2, random_state=42
+    )
+    return train_data_path, eval_data_path
 
 
 #
@@ -97,9 +106,10 @@ def write_csv(destination: str, data: np.ndarray):
         header = ",".join((name for name in data.dtype.names))
     else:
         raise ValueError("Column names are missing")
-    path = Path(destination)
-    path.parent.mkdir(exist_ok=True, parents=True)
-    np.savetxt(path, data, delimiter=",", header=header, comments="")
+    fs = GCSFileSystem()
+    logger.debug(f"write csv destination:{destination}")
+    with fs.open(destination, "w") as f:
+        np.savetxt(f, data, delimiter=",", header=header, comments="")
 
 
 #
@@ -108,6 +118,20 @@ def write_csv(destination: str, data: np.ndarray):
 
 if __name__ == "__main__":
     artifacts = Artifacts.from_args()
+    train_path = artifacts.output_destinations.train_data_path
+    eval_path = artifacts.output_destinations.eval_data_path
+
+    logger.info("generate train_data artifact")
+    train_artifact = KfpArtifactFactory.create_artifact(
+        "dataset", name="train_dataset", uri=f"{dirname(train_path)}/train.txt"
+    )
+    logger.info(f"Done!\ntrain_artifact:{train_artifact}")
+
+    logger.info("generate eval_data artifact")
+    eval_artifact = KfpArtifactFactory.create_artifact(
+        "dataset", name="eval_dataset", uri=f"{dirname(eval_path)}/eval.txt"
+    )
+    logger.info(f"Done!\neval_artifact:{eval_artifact}")
 
     train_data, eval_data = main(artifacts.component_arguments)
 
@@ -115,5 +139,16 @@ if __name__ == "__main__":
     # When pipeline runs, runtime gives path to save dir for each outputPath
     # placeholder. For more detail, see
     # https://cloud.google.com/vertex-ai/docs/pipelines/build-pipeline#compare
-    write_csv(artifacts.output_destinations.train_data_path, train_data)
-    write_csv(artifacts.output_destinations.eval_data_path, eval_data)
+
+    logger.info(f"Save train data for {train_artifact.uri}")
+    write_csv(train_artifact.uri, train_data)
+    logger.info(f"Save train data for {eval_artifact.uri}")
+    write_csv(eval_artifact.uri, eval_data)
+
+    logger.info(f"Save train data artifact")
+    save_artifact(train_path, train_artifact)
+    logger.info(f"Done! artifact is saved at {train_path}")
+
+    logger.info(f"Save eval data artifact")
+    save_artifact(eval_path, eval_artifact)
+    logger.info(f"Done! artifact is saved at {eval_path}")

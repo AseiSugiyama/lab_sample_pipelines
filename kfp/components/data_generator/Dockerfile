@@ -20,7 +20,7 @@ WORKDIR /home
 ENV HOME /home
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
 ENV PATH $PATH:/home/.poetry/bin
-RUN poetry config virtualenvs.create false
+RUN poetry config virtualenvs.create false && poetry config experimental.new-installer false
 
 # specify working directory and install dependency files
 # without dev dependencies (they are required only on testing.)
