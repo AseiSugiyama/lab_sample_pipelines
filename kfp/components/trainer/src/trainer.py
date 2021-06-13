@@ -3,15 +3,19 @@
 import argparse
 import pickle
 from dataclasses import dataclass
-from pathlib import Path
-from typing import IO, get_type_hints
+from logging import getLogger
+from os.path import dirname
+from typing import get_type_hints
 
+import gcsfs
 import numpy as np
+import sklearn
+from artifact import KfpArtifactFactory, load_artifact, save_artifact
 from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestClassifier
 
 TARGET = "species"
-
+logging = getLogger(__file__)
 
 #
 # COMPONENT ARGUMENTS
@@ -68,10 +72,11 @@ class Artifacts:
 # ------------------------------------------------------------------------------
 
 
-def main(args: ComponentArguments) -> BaseEstimator:
-    label_key = TARGET + args.suffix
-    with Path(args.transformed_train_data_path).open() as f:
-        data = load_dataset(f, label_key)
+def main(train_data_path, suffix) -> BaseEstimator:
+    label_key = TARGET + suffix
+    logging.debug(f"load data from {train_data_path}")
+    data = load_dataset(train_data_path, label_key)
+    logging.debug("train model")
     return train(data, label_key)
 
 
@@ -97,8 +102,10 @@ def train(data, label_key) -> BaseEstimator:
     return model
 
 
-def load_dataset(source: IO, label_key: str) -> np.ndarray:
-    data = np.genfromtxt(source, names=True, delimiter=",")
+def load_dataset(source: str, label_key: str) -> np.ndarray:
+    fs = gcsfs.GCSFileSystem()
+    with fs.open(source, "r") as f:
+        data = np.genfromtxt(f, names=True, delimiter=",")
 
     if label_key not in data.dtype.names:
         raise IndexError(f"{label_key} is not in column names as {data.dtype.names}")
@@ -112,9 +119,8 @@ def load_dataset(source: IO, label_key: str) -> np.ndarray:
 
 
 def write_pickle(destination: str, model: BaseEstimator):
-    path = Path(destination)
-    path.parent.mkdir(exist_ok=True, parents=True)
-    with path.open("wb+") as f:
+    fs = gcsfs.GCSFileSystem()
+    with fs.open(destination, "wb") as f:
         pickle.dump(model, f)
 
 
@@ -125,10 +131,31 @@ def write_pickle(destination: str, model: BaseEstimator):
 if __name__ == "__main__":
     artifacts = Artifacts.from_args()
 
-    model = main(artifacts.component_arguments)
+    logging.debug("Create Model Artifact")
+    model_artifact = KfpArtifactFactory.create_artifact(
+        "model",
+        "Sklearn-RandomForest",
+        f"{dirname(artifacts.output_destinations.trained_model_path)}/model.pkl",
+    )
+    model_artifact.framework = "sklearn"
+    model_artifact.framework_version = f"{sklearn.__version__}"
+
+    print(
+        f"Load dataset artifact of train dataset from transform component.\nuri is here: {artifacts.component_arguments.transformed_train_data_path}"
+    )
+    train_ds_artifact = load_artifact(
+        artifacts.component_arguments.transformed_train_data_path
+    )
+    print(f"URI:{train_ds_artifact.uri}")
+    model = main(train_ds_artifact.uri, artifacts.component_arguments.suffix)
 
     # Write output.
     # When pipeline runs, runtime gives path to save dir for each outputPath
     # placeholder. For more detail, see
     # https://cloud.google.com/vertex-ai/docs/pipelines/build-pipeline#compare
-    write_pickle(artifacts.output_destinations.trained_model_path, model)
+    logging.debug(f"save model to {model_artifact.uri}")
+    write_pickle(model_artifact.uri, model)
+    logging.debug(
+        "save model artifact to {artifacts.output_destinations.trained_model_path}"
+    )
+    save_artifact(artifacts.output_destinations.trained_model_path, model_artifact)
