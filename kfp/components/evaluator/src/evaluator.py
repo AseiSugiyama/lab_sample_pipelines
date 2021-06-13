@@ -5,10 +5,13 @@ import json
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
-from typing import IO, Optional, Protocol, Tuple, get_type_hints
-from matplotlib import pyplot as plt
+from typing import Optional, Protocol, Tuple, get_type_hints
+from pathlib import Path
 
+import gcsfs
 import numpy as np
+from artifact import KfpArtifactFactory, load_artifact, save_artifact
+from matplotlib import pyplot as plt
 from sklearn.base import BaseEstimator
 from sklearn.metrics import ConfusionMatrixDisplay
 from sklearn.metrics._plot.confusion_matrix import plot_confusion_matrix
@@ -46,6 +49,8 @@ class OutputDestinations:
 
     confusion_matrix_path: str
     mlpipeline_metrics: str
+    metadata: str
+    dummy_output: str
 
 
 @dataclass
@@ -83,12 +88,11 @@ class Artifacts:
 # ------------------------------------------------------------------------------
 
 
-def main(args: ComponentArguments) -> Tuple[ConfusionMatrixDisplay, float]:
-    label_key = TARGET + args.suffix
-    model = load_model(args.trained_model_path)
+def main(ds_uri, model_uri, suffix) -> Tuple[ConfusionMatrixDisplay, float]:
+    label_key = TARGET + suffix
+    model = load_model(model_uri)
 
-    with Path(args.transformed_eval_data_path).open() as f:
-        data = load_dataset(f, label_key)
+    data = load_dataset(ds_uri, label_key)
 
     if data.dtype.names is None:
         raise ValueError("Column names are missing")
@@ -113,13 +117,17 @@ def main(args: ComponentArguments) -> Tuple[ConfusionMatrixDisplay, float]:
 
 
 def load_model(model_path: str) -> Scorable:
-    with Path(model_path).open("rb") as f:
+    fs = gcsfs.GCSFileSystem()
+
+    with fs.open(model_path) as f:
         model = pickle.load(f)
     return model
 
 
-def load_dataset(source: IO, label_key: str) -> np.ndarray:
-    data = np.genfromtxt(source, names=True, delimiter=",")
+def load_dataset(source: str, label_key: str) -> np.ndarray:
+    fs = gcsfs.GCSFileSystem()
+    with fs.open(source, "r") as f:
+        data = np.genfromtxt(f, names=True, delimiter=",")
 
     if label_key not in data.dtype.names:
         raise IndexError(f"{label_key} is not in column names as {data.dtype.names}")
@@ -150,29 +158,55 @@ def write_text(destination: str, payload: str):
 
 if __name__ == "__main__":
     artifacts = Artifacts.from_args()
+    print(f"metadata(executor_input):{artifacts.output_destinations.metadata}")
+    model_artifact = load_artifact(artifacts.component_arguments.trained_model_path)
+    eval_dataset_artifact = load_artifact(
+        artifacts.component_arguments.transformed_eval_data_path
+    )
+    confusion_matrix, score = main(
+        eval_dataset_artifact.uri,
+        model_artifact.uri,
+        artifacts.component_arguments.suffix,
+    )
 
-    confusion_matrix, score = main(artifacts.component_arguments)
+    cm_artifact = KfpArtifactFactory.create_artifact(
+        "classification_metrics", "sample-pipeline-metrics", ""
+    )
+    cm_artifact.confusionMatrix = {
+        "properties": {
+            "annotationSpec": confusion_matrix.display_labels.tolist(),
+            "rows": confusion_matrix.confusion_matrix.tolist(),
+        }
+    }
+    score_artifact = KfpArtifactFactory.create_artifact(
+        "metrics", "sample-pipeline-metrics", ""
+    )
+    score_artifact.accuracy = score
+
+    save_artifact(artifacts.output_destinations.confusion_matrix_path, cm_artifact)
+    save_artifact(artifacts.output_destinations.mlpipeline_metrics, score_artifact)
+
 
     # Write output.
     # When pipeline runs, runtime gives path to save dir for each outputPath
     # placeholder. For more detail, see
     # https://cloud.google.com/vertex-ai/docs/pipelines/build-pipeline#compare
-    write_confusion_matrix(
-        artifacts.output_destinations.confusion_matrix_path, confusion_matrix
-    )
+    # write_confusion_matrix(
+    #     artifacts.output_destinations.confusion_matrix_path, confusion_matrix
+    # )
 
-    # Write metric value.
-    write_text(
-        artifacts.output_destinations.mlpipeline_metrics,
-        json.dumps(
-            {
-                "metrics": [
-                    {
-                        "name": "accuracy",
-                        "numberValue": score,
-                        "format": "RAW",  # RAW or PERCENTAGE
-                    }
-                ]
-            }
-        ),
-    )
+    # # Write metric value.
+    # write_text(
+    #     artifacts.output_destinations.mlpipeline_metrics,
+    #     json.dumps(
+    #         {
+    #             "metrics": [
+    #                 {
+    #                     "name": "accuracy",
+    #                     "numberValue": score,
+    #                     "format": "RAW",  # RAW or PERCENTAGE
+    #                 }
+    #             ]
+    #         }
+    #     ),
+    # )

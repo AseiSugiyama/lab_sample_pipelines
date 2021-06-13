@@ -11,6 +11,8 @@ pip = "^21.1.1"
 numpy = "^1.20.3"
 scikit-learn = "^0.24.2"
 matplotlib = "^3.4.2"
+gcsfs = "^2021.6.0"
+kfp = "^1.6.3"
 
 [tool.poetry.dev-dependencies]
 pydocstyle = "*"
