@@ -2,13 +2,18 @@
 
 import argparse
 from dataclasses import dataclass
+from logging import getLogger
+from os.path import dirname
 from typing import IO, Tuple, get_type_hints
-from pathlib import Path
 
+import gcsfs
 import numpy as np
+from artifact import KfpArtifactFactory, load_artifact, save_artifact
 
 TARGET = "species"
+DATASET_SCHEMA = "dataset"
 
+logging = getLogger(__file__)
 
 #
 # COMPONENT ARGUMENTS
@@ -67,15 +72,17 @@ class Artifacts:
 # ------------------------------------------------------------------------------
 
 
-def main(args: ComponentArguments) -> Tuple[np.ndarray, np.ndarray]:
+def main(train_artifact, eval_artifact, suffix="_xf") -> Tuple[np.ndarray, np.ndarray]:
+    fs = gcsfs.GCSFileSystem()
+
     def download(data: str):
-        with Path(data).open() as f:
+        with fs.open(data, "r") as f:
             return fetch_dataset(f)
 
-    datasets = map(download, [args.train_data_path, args.eval_data_path])
+    datasets = map(download, [train_artifact.uri, eval_artifact.uri])
 
     def _transform(data):
-        return transform(data, args.suffix)
+        return transform(data, suffix)
 
     train_data, eval_data = map(_transform, datasets)
 
@@ -117,23 +124,54 @@ def write_csv(destination: str, data: np.ndarray):
         header = ",".join((name for name in data.dtype.names))
     else:
         raise ValueError("Column names are missing")
-    path = Path(destination)
-    path.parent.mkdir(exist_ok=True, parents=True)
-    np.savetxt(path, data, delimiter=",", header=header, comments="")
+    fs = gcsfs.GCSFileSystem()
+    with fs.open(destination, "w") as f:
+        np.savetxt(f, data, delimiter=",", header=header, comments="")
 
 
 #
 # ENTRY POINT
 # ------------------------------------------------------------------------------
-
 if __name__ == "__main__":
     artifacts = Artifacts.from_args()
 
-    train_data, eval_data = main(artifacts.component_arguments)
+    logging.debug(f"train_data_path: {artifacts.component_arguments.train_data_path}")
+    logging.debug(f"eval_data_path: {artifacts.component_arguments.eval_data_path}")
+
+    train_data_path = artifacts.component_arguments.train_data_path
+    eval_data_path = artifacts.component_arguments.eval_data_path
+
+    logging.debug("load train_dataset from data_generator component")
+    train_ds_artifact = load_artifact(train_data_path)
+    logging.debug("load eval_dataset from data_generator component")
+    eval_ds_artifact = load_artifact(eval_data_path)
+
+    train_data, eval_data = main(
+        train_ds_artifact, eval_ds_artifact, suffix=artifacts.component_arguments.suffix
+    )
+
+    transformed_train_ds_artifact = KfpArtifactFactory.create_artifact(
+        DATASET_SCHEMA,
+        "transformed_train_dataset",
+        f"{dirname(train_data_path)}/train_xf.txt",
+    )
+    transformed_eval_ds_artifact = KfpArtifactFactory.create_artifact(
+        DATASET_SCHEMA,
+        "transformed_eval_dataset",
+        f"{dirname(eval_data_path)}/eval_xf.txt",
+    )
 
     # Write output.
     # When pipeline runs, runtime gives path to save dir for each outputPath
     # placeholder. For more detail, see
     # https://cloud.google.com/vertex-ai/docs/pipelines/build-pipeline#compare
-    write_csv(artifacts.output_destinations.transformed_train_data_path, train_data)
-    write_csv(artifacts.output_destinations.transformed_eval_data_path, eval_data)
+    write_csv(transformed_train_ds_artifact.uri, train_data)
+    write_csv(transformed_eval_ds_artifact.uri, eval_data)
+    save_artifact(
+        artifacts.output_destinations.transformed_train_data_path,
+        transformed_train_ds_artifact,
+    )
+    save_artifact(
+        artifacts.output_destinations.transformed_eval_data_path,
+        transformed_eval_ds_artifact,
+    )

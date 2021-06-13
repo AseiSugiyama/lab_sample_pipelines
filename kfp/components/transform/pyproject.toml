@@ -9,6 +9,8 @@ license = "MIT"
 python = "~3.8.0"
 pip = "^21.1.1"
 numpy = "^1.20.3"
+kfp = "^1.6.3"
+gcsfs = "^2021.6.0"
 
 [tool.poetry.dev-dependencies]
 pydocstyle = "*"
