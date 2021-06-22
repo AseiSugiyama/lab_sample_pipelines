@@ -11,7 +11,7 @@ Penguin classification pipeline with KFP SDK. To try to run this pipeline, check
 
 - TBD
 
-## Fetaure Works
+## Future Works
 
 ### KFP SDK
 
