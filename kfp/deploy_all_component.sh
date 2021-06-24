@@ -1,3 +1,5 @@
+#!/bin/sh
+
 GCP_PROJECT_ID=your-sample-pipeline-project # Enter your GCP Project ID
 GCP_GCR_ENDPOINT=us.gcr.io # Enter your GCR endpoint like `asia.gcr.io`
 
