@@ -11,7 +11,7 @@ Penguin classification pipeline with KFP SDK. To try to run this pipeline, check
 
 - TBD
 
-## Future Works
+## Future Work
 
 ### KFP SDK
 
@@ -19,7 +19,6 @@ Penguin classification pipeline with KFP SDK. To try to run this pipeline, check
 - [ ] Migrate from `GCPPath` into `Artifact`
 - [ ] Pipeline E2E test
 - [ ] Add Pusher component
-- [ ] Add CI/CD sample using GitHub Actions
 
 ### TFX SDK
 
