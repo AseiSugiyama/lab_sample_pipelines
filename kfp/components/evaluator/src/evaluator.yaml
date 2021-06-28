@@ -13,5 +13,6 @@ implementation:
       - {inputUri: trained_model_path}
       - {inputUri: transformed_eval_data_path}
       - {inputValue: suffix}
-      - {outputUri: confusion_matrix_path}
-      - {outputUri: mlpipeline_metrics}
+      - {outputPath: confusion_matrix_path}
+      - {outputPath: mlpipeline_metrics}
+      - {executorInput: null}

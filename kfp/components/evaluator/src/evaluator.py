@@ -15,6 +15,7 @@ from matplotlib import pyplot as plt
 from sklearn.base import BaseEstimator
 from sklearn.metrics import ConfusionMatrixDisplay
 from sklearn.metrics._plot.confusion_matrix import plot_confusion_matrix
+from kfp.dsl.metrics_utils import ConfusionMatrix
 
 TARGET = "species"
 
@@ -49,6 +50,7 @@ class OutputDestinations:
 
     confusion_matrix_path: str
     mlpipeline_metrics: str
+    metadata: str
 
 
 @dataclass
@@ -64,7 +66,6 @@ class Artifacts:
         for artifact in get_type_hints(cls).values():
             for arg_name, arg_type in get_type_hints(artifact).items():
                 parser.add_argument(arg_name, type=arg_type)
-
         return parser
 
     @classmethod
@@ -156,7 +157,8 @@ def write_text(destination: str, payload: str):
 
 if __name__ == "__main__":
     artifacts = Artifacts.from_args()
-    print(f"metadata(executor_input):{artifacts.output_destinations.metadata}")
+    metadata = json.loads(artifacts.output_destinations.metadata)
+    print(f"metadata: {metadata}")
     model_artifact = load_artifact(artifacts.component_arguments.trained_model_path)
     eval_dataset_artifact = load_artifact(
         artifacts.component_arguments.transformed_eval_data_path
@@ -167,26 +169,46 @@ if __name__ == "__main__":
         artifacts.component_arguments.suffix,
     )
 
+    artifact_schema = metadata["outputs"]["artifacts"]["confusion_matrix_path"]["artifacts"][0]
     cm_artifact = KfpArtifactFactory.create_artifact(
-        "classification_metrics", "sample-pipeline-metrics", ""
+        "classification_metrics", artifact_schema["name"], artifact_schema["uri"]
     )
-    cm_artifact.confusionMatrix = {
-        "properties": {
-            "annotationSpec": confusion_matrix.display_labels.tolist(),
-            "rows": confusion_matrix.confusion_matrix.tolist(),
-        }
-    }
-    score_artifact = KfpArtifactFactory.create_artifact(
-        "metrics", "sample-pipeline-metrics", ""
+    cm = ConfusionMatrix()
+    cm.load_matrix(
+        [str(s) for s in confusion_matrix.display_labels.tolist()],
+        [r for r in confusion_matrix.confusion_matrix.tolist()]
     )
-    score_artifact.accuracy = score
+    cm_artifact.confusionMatrix = cm.get_metrics()
 
+    artifact_schema = metadata["outputs"]["artifacts"]["mlpipeline_metrics"]["artifacts"][0]
+    score_artifact = KfpArtifactFactory.create_artifact(
+        "metrics", artifact_schema["name"], artifact_schema["uri"]
+    )
+
+    score_artifact.accuracy = score
     save_artifact(artifacts.output_destinations.confusion_matrix_path, cm_artifact)
     save_artifact(artifacts.output_destinations.mlpipeline_metrics, score_artifact)
 
-    # print("Metadataの書き込み")
-    # with open(path, "w") as f:
-    #     json.dump(output_metadata, f)
+    output_metadata = {}
+    output_metadata["artifacts"] = {}
+    for name, artifact in zip(["confusion_matrix_path", "mlpipeline_metrics"], [cm_artifact, score_artifact]):
+        runtime_artifact = {
+            "name": artifact.runtime_artifact.name,
+            "uri": artifact.uri,
+            "metadata": artifact.metadata
+        }
+        output_metadata["artifacts"][name] = {"artifacts": [runtime_artifact]}
+
+    print(f"作成されたoutput_metadata:{output_metadata}")
+    path = Path(metadata["outputs"]["outputFile"])
+    print(f"Directoryを作成:{str(path)}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    print("Directory作成 Done")
+
+    print("Metadataの書き込み")
+    with open(path, "w") as f:
+        json.dump(output_metadata, f)
+    print("Metadataの書き込みDone")
     # print("Metadataの書き込み Done")
     # # Write output.
     # When pipeline runs, runtime gives path to save dir for each outputPath
