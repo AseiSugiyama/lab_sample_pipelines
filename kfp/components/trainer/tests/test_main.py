@@ -1,8 +1,8 @@
-from src import trainer
 from io import StringIO
 
 import numpy as np
 import pytest
+from src import trainer
 
 
 class TestFetchDataset:
@@ -39,7 +39,7 @@ class TestTrainModel:
                 ("culmen_length_mm_xf", "f8"),
                 ("culmen_depth_mm_xf", "f8"),
                 ("flipper_length_mm_xf", "f8"),
-                ("body_mass_g_xf", 'f8')
+                ("body_mass_g_xf", "f8"),
             ],
         )
         model = trainer.train(source, "species_xf")

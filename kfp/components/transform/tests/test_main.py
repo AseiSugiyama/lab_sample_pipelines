@@ -1,9 +1,9 @@
-from src import transform
 from io import StringIO
 
 import numpy as np
-from numpy.ma.testutils import assert_equal
 import pytest
+from numpy.ma.testutils import assert_equal
+from src import transform
 
 
 class TestFetchDataset:
@@ -42,10 +42,10 @@ class TestTransformDataset:
         formats = ["i8", "f8", "f8", "f8", "f8"]
         dtypes = list(zip(names, formats))
         data = np.array(source, dtype=dtypes)
-        
+
         expected_names = [name + "_xf" for name in names]
         expected_dtypes = list(zip(expected_names, formats))
         expected = np.array(source, dtype=expected_dtypes)
-        
+
         actual = transform.transform(data, "_xf")
         assert_equal(actual, expected)

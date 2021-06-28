@@ -1,8 +1,8 @@
-from src import data_generator
 from io import StringIO
 
 import numpy as np
 import pytest
+from src import data_generator
 
 
 class TestFetchDataset:
@@ -23,9 +23,6 @@ class TestFetchDataset:
         assert actual["culmen_length_mm"].dtype == np.float64
 
     def test_fetch_dataset_fails_file_without_header(self):
-        source = StringIO(
-            "0,1\n"
-            "0,1"
-        )
+        source = StringIO("0,1\n" "0,1")
         with pytest.raises(IndexError):
             data_generator.fetch_dataset(source)

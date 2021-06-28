@@ -28,4 +28,3 @@ class TestLoadDataset:
         label_key = "species"
         with pytest.raises(IndexError):
             evaluator.load_dataset(source, label_key)
-
