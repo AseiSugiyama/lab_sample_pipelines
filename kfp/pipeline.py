@@ -47,7 +47,7 @@ def get_component_spec(name: str) -> str:
     version = get_version_from_toml(f"{base_dir}/pyproject.toml")
     tag = f"v{version}"
     image = f"{GCP_GCR_ENDPOINT}/{GCP_PROJECT_ID}/{COMPONENT_PREFIX}-{name}:{tag}"
-    path = Path(f"{base_dir}/src/{name.replace('-', '_')}.yaml")
+    path = Path(f"{base_dir}/{name.replace('-', '_')}.yaml")
     template = Template(path.read_text())
     return template.substitute(tagged_name=image)
 
