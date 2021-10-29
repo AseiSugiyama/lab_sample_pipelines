@@ -1,10 +1,10 @@
 name: evaluator
 inputs:
-- {name: trained_model_path, type: {GCPPath: {data_type: PKL}}}
-- {name: transformed_eval_data_path, type: {GCPPath: {data_type: CSV}}}
+- {name: trained_model_path, type: {GCSPath: {data_type: PKL}}}
+- {name: transformed_eval_data_path, type: {GCSPath: {data_type: CSV}}}
 - {name: suffix, type: String}
 outputs:
-- {name: confusion_matrix_path, type: {GCPPath: {data_type: PNG}}}
+- {name: confusion_matrix_path, type: {GCSPath: {data_type: PNG}}}
 - {name: mlpipeline_metrics, type: Metrics}
 implementation:
   container:
