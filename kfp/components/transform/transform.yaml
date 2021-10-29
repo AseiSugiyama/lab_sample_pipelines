@@ -1,11 +1,11 @@
 name: transform
 inputs:
-- {name: train_data_path, type: {GCPPath: {data_type: CSV}}}
-- {name: eval_data_path, type: {GCPPath: {data_type: CSV}}}
+- {name: train_data_path, type: {GCSPath: {data_type: CSV}}}
+- {name: eval_data_path, type: {GCSPath: {data_type: CSV}}}
 - {name: suffix, type: String}
 outputs:
-- {name: transformed_train_data_path, type: {GCPPath: {data_type: CSV}}}
-- {name: transformed_eval_data_path, type: {GCPPath: {data_type: CSV}}}
+- {name: transformed_train_data_path, type: {GCSPath: {data_type: CSV}}}
+- {name: transformed_eval_data_path, type: {GCSPath: {data_type: CSV}}}
 implementation:
   container:
     image: ${tagged_name}
