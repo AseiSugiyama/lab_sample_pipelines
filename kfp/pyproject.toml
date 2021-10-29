@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sample_pipeline"
-version = "0.0.0"
+version = "0.0.1"
 description = "KFP Sample Pipeline."
 authors = ["Repro AI Lab Team <dev-lab@repro.io>"]
 license = "MIT"
@@ -9,6 +9,7 @@ license = "MIT"
 python = "~3.8.0"
 kfp = "^1.0"
 pip = "^21.1.1"
+google-cloud-aiplatform = "^1.6.1"
 
 [tool.poetry.dev-dependencies]
 black = { version = "*", allow-prereleases = true }

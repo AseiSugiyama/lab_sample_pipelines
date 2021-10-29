@@ -5,6 +5,11 @@ outputs:
 implementation:
   container:
     image: ${tagged_name}
+    command:
+      - poetry
+      - run
+      - python
+      - /component/src/data_generator.py
     args:
-      - {outputPath: train_data_path}
-      - {outputPath: eval_data_path}
+      - { outputPath: train_data_path }
+      - { outputPath: eval_data_path }

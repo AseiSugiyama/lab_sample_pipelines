@@ -7,6 +7,11 @@ outputs:
 implementation:
   container:
     image: ${tagged_name}
+    command:
+      - poetry
+      - run
+      - python
+      - /component/src/trainer.py
     args:
       - {inputPath: transformed_train_data_path}
       - {inputValue: suffix}

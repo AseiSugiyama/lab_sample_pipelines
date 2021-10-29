@@ -9,6 +9,11 @@ outputs:
 implementation:
   container:
     image: ${tagged_name}
+    command: 
+      - poetry
+      - run
+      - python
+      - /component/src/transform.py
     args:
       - {inputPath: train_data_path}
       - {inputPath: eval_data_path}

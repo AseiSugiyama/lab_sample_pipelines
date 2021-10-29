@@ -56,6 +56,3 @@ FROM build_base AS production
 
 # apply the cache system, copy codes
 COPY src/ src/
-
-# execute python code as default entrypoint.
-ENTRYPOINT [ "poetry", "run", "python", "/component/src/transform.py" ]
