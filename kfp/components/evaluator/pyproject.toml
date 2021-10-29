@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kfp_sample_evaluator"
-version = "0.0.0"
+version = "0.0.1"
 description = "evaluator component of kfp sample pipeline"
 authors = ["Repro AI Lab Team <dev-lab@repro.io>"]
 license = "MIT"

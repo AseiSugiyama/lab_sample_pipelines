@@ -9,6 +9,11 @@ outputs:
 implementation:
   container:
     image: ${tagged_name}
+    command: 
+      - poetry
+      - run
+      - python
+      - /component/src/evaluator.py
     args:
       - {inputPath: trained_model_path}
       - {inputPath: transformed_eval_data_path}
