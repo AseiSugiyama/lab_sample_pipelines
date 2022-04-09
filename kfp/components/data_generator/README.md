@@ -26,7 +26,7 @@ $ tree .
 
 ## Pre-requirements
 
-- Python ^3.8
+- Python ^3.9
 - poetry
 - Docker
 
@@ -57,7 +57,7 @@ docker build --target production -t $(awk -F'[ ="]+' '$1 == "name" { print $2 }'
 ## Run docker
 
 ```shell
-docker run kfp-sample-data-generator ./tmp/train.csv ./tmp/eval.csv
+docker run kfp-sample-data-generator poetry run python src/data_generator.py ./tmp/train.csv ./tmp/eval.csv
 ```
 
 ## Deploy to GCR

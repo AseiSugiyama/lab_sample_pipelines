@@ -1,15 +1,15 @@
 [tool.poetry]
 name = "kfp_sample_data_generator"
-version = "0.0.1"
+version = "0.0.2"
 description = "data-generator component of kfp sample pipeline"
 authors = ["Repro AI Lab Team <dev-lab@repro.io>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "~3.8.0"
-pip = "^21.1.1"
-numpy = "^1.20.3"
-scikit-learn = "^0.24.2"
+python = "~3.9.0"
+pip = "*"
+numpy = "^1.22.3"
+scikit-learn = "^1.0.0"
 
 [tool.poetry.dev-dependencies]
 pydocstyle = "*"
