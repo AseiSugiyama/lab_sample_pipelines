@@ -26,7 +26,7 @@ $ tree .
 
 ## Pre-requirements
 
-- Python ^3.8
+- Python ^3.9
 - poetry
 - Docker
 
@@ -63,6 +63,7 @@ docker build --target production -t $(awk -F'[ ="]+' '$1 == "name" { print $2 }'
 docker run \
   --mount type=bind,source="$(pwd)"/tmp,target=/component/tmp \
   kfp-sample-trainer \
+  poetry run python src/trainer.py \
   ./tmp/train_xf.csv \
   "_xf" \
   ./tmp/model.pkl
