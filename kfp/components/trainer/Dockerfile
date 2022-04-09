@@ -6,7 +6,7 @@
 #
 # BUILD BASE IMAGE (USED IN BOTH OF TEST/PROD)
 # ------------------------------------------------------------------------------
-FROM python:3.9.12-slim-bullseye AS build_base
+FROM amd64/python:3.9.12-slim-bullseye AS build_base
 
 # install dependent packages
 RUN apt-get -y update && apt-get install -y --no-install-recommends \

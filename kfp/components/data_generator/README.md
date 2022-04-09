@@ -51,7 +51,7 @@ poetry run python src/data_generator.py ./tmp/train.csv ./tmp/eval.csv
 To build a container image with same version described in `pyproject.toml`, use following;
 
 ```shell
-docker build --target production -t $(awk -F'[ ="]+' '$1 == "name" { print $2 }' pyproject.toml | sed 's/_/-/g'):latest .
+docker build --platform amd64 --target production -t $(awk -F'[ ="]+' '$1 == "name" { print $2 }' pyproject.toml | sed 's/_/-/g'):latest .
 ```
 
 ## Run docker
