@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.metrics import ConfusionMatrixDisplay
-from sklearn.metrics._plot.confusion_matrix import plot_confusion_matrix
+
 
 TARGET = "species"
 
@@ -100,7 +100,7 @@ def main(args: ComponentArguments) -> Tuple[ConfusionMatrixDisplay, float]:
     y_eval = data[label_key]
 
     score = model.score(x_eval, y_eval)
-    matrix = plot_confusion_matrix(
+    matrix = ConfusionMatrixDisplay.from_estimator(
         model, x_eval, y_eval, cmap=plt.cm.Blues, normalize="true"
     )
 

@@ -26,7 +26,7 @@ $ tree .
 
 ## Pre-requirements
 
-- Python ^3.8
+- Python ^3.9
 - poetry
 - Docker
 
@@ -51,13 +51,13 @@ poetry run python src/data_generator.py ./tmp/train.csv ./tmp/eval.csv
 To build a container image with same version described in `pyproject.toml`, use following;
 
 ```shell
-docker build --target production -t $(awk -F'[ ="]+' '$1 == "name" { print $2 }' pyproject.toml | sed 's/_/-/g'):latest .
+docker build --platform amd64 --target production -t $(awk -F'[ ="]+' '$1 == "name" { print $2 }' pyproject.toml | sed 's/_/-/g'):latest .
 ```
 
 ## Run docker
 
 ```shell
-docker run kfp-sample-data-generator ./tmp/train.csv ./tmp/eval.csv
+docker run kfp-sample-data-generator poetry run python src/data_generator.py ./tmp/train.csv ./tmp/eval.csv
 ```
 
 ## Deploy to GCR

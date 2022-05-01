@@ -28,7 +28,7 @@ $ tree .
 
 ## Pre-requirements
 
-- Python ^3.8
+- Python ^3.9
 - poetry
 - Docker
 
@@ -53,7 +53,7 @@ poetry run python src/transform.py ./tmp/train.csv ./tmp/eval.csv "_xf" ./tmp/tr
 To build a container image with same version described in `pyproject.toml`, use following;
 
 ```shell
-docker build --target production -t $(awk -F'[ ="]+' '$1 == "name" { print $2 }' pyproject.toml | sed 's/_/-/g'):latest .
+docker build --platform amd64 --target production -t $(awk -F'[ ="]+' '$1 == "name" { print $2 }' pyproject.toml | sed 's/_/-/g'):latest .
 ```
 
 ## Run docker
@@ -62,6 +62,8 @@ docker build --target production -t $(awk -F'[ ="]+' '$1 == "name" { print $2 }'
 docker run \
   --mount type=bind,source="$(pwd)"/tmp,target=/component/tmp \
   kfp-sample-transform \
+  poetry run \
+  python src/transform.py \
   ./tmp/train.csv \
   ./tmp/eval.csv "_xf" \
   ./tmp/train_xf.csv \
