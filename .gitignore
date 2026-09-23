@@ -211,8 +211,5 @@ $RECYCLE.BIN/
 *.lnk
 
 # KFP compiled pipelines
-kfp_sample_pipeline.json
-kfp_sample_pipeline.yaml
-
-
-
+kfp_*_pipeline.yaml
+kfp_*_pipeline.json
