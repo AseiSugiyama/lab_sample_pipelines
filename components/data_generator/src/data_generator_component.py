@@ -15,16 +15,13 @@ REGISTRY_BASE = os.environ.get(
     "asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample",
 )
 DEFAULT_DATA_GENERATOR_IMAGE = f"{REGISTRY_BASE}/kfp-sample-data-generator:latest"
-DEFAULT_DATASET_URI = (
-    "https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv"
-)
 
 
 @dsl.component(base_image=DEFAULT_DATA_GENERATOR_IMAGE)
 def data_generator_op(
     train_data: Output[Dataset],
     eval_data: Output[Dataset],
-    dataset_url: str = DEFAULT_DATASET_URI,
+    dataset_url: str = "https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv",
     test_size: float = 0.2,
     random_state: int = 42,
 ):
