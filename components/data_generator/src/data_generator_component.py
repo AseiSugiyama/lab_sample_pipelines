@@ -6,12 +6,15 @@ core `generate_data` domain logic and records execution metadata (such as datase
 into Vertex AI ML Metadata (MLMD).
 """
 
+import os
 from kfp import dsl
 from kfp.dsl import Dataset, Output
 
-DEFAULT_DATA_GENERATOR_IMAGE = (
-    "asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample/kfp-sample-data-generator:latest"
+REGISTRY_BASE = os.environ.get(
+    "KFP_REGISTRY_BASE",
+    "asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample",
 )
+DEFAULT_DATA_GENERATOR_IMAGE = f"{REGISTRY_BASE}/kfp-sample-data-generator:latest"
 DEFAULT_DATASET_URI = (
     "https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv"
 )

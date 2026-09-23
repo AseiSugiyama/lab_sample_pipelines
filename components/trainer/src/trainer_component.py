@@ -5,12 +5,16 @@ It connects KFP input `Input[Dataset]` and output `Output[Model]` artifacts to `
 and logs algorithm hyperparameters and ML framework metadata directly into Vertex AI MLMD.
 """
 
+import os
 from kfp import dsl
 from kfp.dsl import Dataset, Input, Model, Output
 
-DEFAULT_TRAINER_IMAGE = (
-    "asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample/kfp-sample-trainer:latest"
+REGISTRY_BASE = os.environ.get(
+    "KFP_REGISTRY_BASE",
+    "asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample",
 )
+DEFAULT_TRAINER_IMAGE = f"{REGISTRY_BASE}/kfp-sample-trainer:latest"
+
 
 
 @dsl.component(base_image=DEFAULT_TRAINER_IMAGE)

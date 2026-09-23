@@ -6,12 +6,16 @@ executes column suffix transformations via `transform_data`, writes the results
 to `Output[Dataset]`, and records transformation metadata into Vertex AI MLMD.
 """
 
+import os
 from kfp import dsl
 from kfp.dsl import Dataset, Input, Output
 
-DEFAULT_TRANSFORM_IMAGE = (
-    "asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample/kfp-sample-transform:latest"
+REGISTRY_BASE = os.environ.get(
+    "KFP_REGISTRY_BASE",
+    "asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample",
 )
+DEFAULT_TRANSFORM_IMAGE = f"{REGISTRY_BASE}/kfp-sample-transform:latest"
+
 
 
 @dsl.component(base_image=DEFAULT_TRANSFORM_IMAGE)

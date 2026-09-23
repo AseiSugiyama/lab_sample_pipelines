@@ -7,12 +7,16 @@ confusion matrix diagrams via `Output[ClassificationMetrics]`, which render
 natively in the Vertex AI Pipelines web UI.
 """
 
+import os
 from kfp import dsl
 from kfp.dsl import ClassificationMetrics, Dataset, Input, Metrics, Model, Output
 
-DEFAULT_EVALUATOR_IMAGE = (
-    "asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample/kfp-sample-evaluator:latest"
+REGISTRY_BASE = os.environ.get(
+    "KFP_REGISTRY_BASE",
+    "asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample",
 )
+DEFAULT_EVALUATOR_IMAGE = f"{REGISTRY_BASE}/kfp-sample-evaluator:latest"
+
 
 
 @dsl.component(base_image=DEFAULT_EVALUATOR_IMAGE)
