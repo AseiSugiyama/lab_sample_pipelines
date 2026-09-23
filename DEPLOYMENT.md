@@ -72,15 +72,35 @@ gcloud auth configure-docker asia-northeast1-docker.pkg.dev
 
 Vertex AI Pipelines runs on Intel/AMD x86_64 (`linux/amd64`). If building on Apple Silicon (M-series Mac), images must be cross-compiled for `--platform linux/amd64` to prevent `exec format error` at runtime.
 
-Configure your project and registry settings in `deploy_all_component.sh`:
+Before running the deployment script, ensure you have an active Docker Buildx builder:
 
 ```shell
-GCP_PROJECT_ID="your-project-id"
-GCP_REGION="asia-northeast1"
-ARTIFACT_REGISTRY_REPO="pipeline-components"
+docker buildx create --name mybuilder --use
 ```
 
-Then build and push all components using Docker Buildx:
+The script `deploy_all_component.sh` uses three configuration variables: `GCP_PROJECT_ID`, `GCP_REGION`, and `ARTIFACT_REGISTRY_REPO`. You can configure them either by exporting environment variables in your shell or by editing the script directly:
+
+**Method A: Export environment variables in your terminal (Recommended)**
+
+```shell
+export GCP_PROJECT_ID=$(gcloud config get-value project)
+export GCP_REGION="asia-northeast1"
+export ARTIFACT_REGISTRY_REPO="kfp-sample"
+
+./deploy_all_component.sh
+```
+
+**Method B: Edit the script directly**
+
+Open `deploy_all_component.sh` and set your values at the top of the file:
+
+```shell
+GCP_PROJECT_ID=${GCP_PROJECT_ID:-"your-actual-project-id"}
+GCP_REGION=${GCP_REGION:-"asia-northeast1"}
+ARTIFACT_REGISTRY_REPO=${ARTIFACT_REGISTRY_REPO:-"kfp-sample"}
+```
+
+Then run:
 
 ```shell
 ./deploy_all_component.sh
@@ -106,10 +126,12 @@ Compile either or both pipelines into the KFP v2 Pipeline Spec (IR YAML) as need
 
 ### 1. Compile Container Pipeline
 
-Compile the CLI-based container pipeline into `kfp_container_pipeline.yaml`:
+Set `KFP_REGISTRY_BASE` to match your Artifact Registry repository, then compile:
 
 ```shell
+export KFP_REGISTRY_BASE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${ARTIFACT_REGISTRY_REPO}"
 uv run python pipeline_container.py
+# -> Output: kfp_container_pipeline.yaml
 ```
 
 ### 2. Compile Native KFP Component Pipeline
@@ -118,6 +140,7 @@ Compile the native KFP component pipeline into `kfp_component_pipeline.yaml`:
 
 ```shell
 uv run python pipeline_component.py
+# -> Output: kfp_component_pipeline.yaml
 ```
 
 ## Run on Vertex AI Pipelines
