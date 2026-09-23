@@ -9,6 +9,7 @@ from kfp.dsl import Dataset
 
 def test_data_generator_component_spec():
     """Verify component specification, inputs, outputs, and base image."""
+    # KFP's @dsl.component dynamically attaches .component_spec and .python_func at runtime
     op: Any = data_generator_op
     spec = op.component_spec
     assert "data-generator" in spec.name or "data_generator" in spec.name
@@ -33,7 +34,7 @@ def test_data_generator_component_execution(tmp_path):
     train_ds = Dataset(name="train_data", uri=str(tmp_path / "train.csv"))
     eval_ds = Dataset(name="eval_data", uri=str(tmp_path / "eval.csv"))
 
-    # Direct execution of the underlying component function
+    # Access underlying python_func dynamically attached by @dsl.component
     op: Any = data_generator_op
     op.python_func(
         train_data=train_ds,

@@ -11,6 +11,7 @@ from kfp.dsl import Dataset, Model, Metrics, ClassificationMetrics
 
 def test_evaluator_component_spec():
     """Verify component specification, inputs, outputs, and base image."""
+    # KFP's @dsl.component dynamically attaches .component_spec and .python_func at runtime
     op: Any = evaluate_model_op
     spec = op.component_spec
     assert "evaluate" in spec.name
@@ -47,6 +48,7 @@ def test_evaluator_component_execution(tmp_path):
         name="classification_metrics", uri=str(tmp_path / "cm.json")
     )
 
+    # Access underlying python_func dynamically attached by @dsl.component
     op: Any = evaluate_model_op
     op.python_func(
         trained_model=trained_model,

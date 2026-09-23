@@ -8,6 +8,7 @@ from kfp.dsl import Dataset
 
 def test_transform_component_spec():
     """Verify component specification, inputs, outputs, and base image."""
+    # KFP's @dsl.component dynamically attaches .component_spec and .python_func at runtime
     op: Any = transform_op
     spec = op.component_spec
     assert "transform" in spec.name
@@ -35,6 +36,7 @@ def test_transform_component_execution(tmp_path):
     transformed_train_ds = Dataset(name="transformed_train_data", uri=str(train_out))
     transformed_eval_ds = Dataset(name="transformed_eval_data", uri=str(eval_out))
 
+    # Access underlying python_func dynamically attached by @dsl.component
     op: Any = transform_op
     op.python_func(
         train_data=train_ds,
