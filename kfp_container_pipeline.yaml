@@ -1,0 +1,296 @@
+# PIPELINE DEFINITION
+# Name: penguin-classification-container-pipeline
+# Description: Palmer Penguins classification pipeline using CLI container components
+# Inputs:
+#    dataset_url: str [Default: 'https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv']
+#    n_estimators: int [Default: 100.0]
+#    random_state: int [Default: 42.0]
+#    suffix: str [Default: '_xf']
+components:
+  comp-data-generator-container-op:
+    executorLabel: exec-data-generator-container-op
+    inputDefinitions:
+      parameters:
+        dataset_url:
+          defaultValue: https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv
+          isOptional: true
+          parameterType: STRING
+        random_state:
+          defaultValue: 42.0
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        test_size:
+          defaultValue: 0.2
+          isOptional: true
+          parameterType: NUMBER_DOUBLE
+    outputDefinitions:
+      artifacts:
+        eval_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        train_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-evaluator-container-op:
+    executorLabel: exec-evaluator-container-op
+    inputDefinitions:
+      artifacts:
+        trained_model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+        transformed_eval_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        suffix:
+          defaultValue: _xf
+          isOptional: true
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        confusion_matrix:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        metrics:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-trainer-container-op:
+    executorLabel: exec-trainer-container-op
+    inputDefinitions:
+      artifacts:
+        transformed_train_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        n_estimators:
+          defaultValue: 100.0
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        random_state:
+          defaultValue: 42.0
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        suffix:
+          defaultValue: _xf
+          isOptional: true
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        trained_model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+  comp-transform-container-op:
+    executorLabel: exec-transform-container-op
+    inputDefinitions:
+      artifacts:
+        eval_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        train_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+      parameters:
+        suffix:
+          defaultValue: _xf
+          isOptional: true
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        transformed_eval_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        transformed_train_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+deploymentSpec:
+  executors:
+    exec-data-generator-container-op:
+      container:
+        args:
+        - --train-data
+        - '{{$.outputs.artifacts[''train_data''].path}}'
+        - --eval-data
+        - '{{$.outputs.artifacts[''eval_data''].path}}'
+        - --dataset-url
+        - '{{$.inputs.parameters[''dataset_url'']}}'
+        - --test-size
+        - '{{$.inputs.parameters[''test_size'']}}'
+        - --random-state
+        - '{{$.inputs.parameters[''random_state'']}}'
+        command:
+        - python
+        - -m
+        - data_generator_cli
+        image: asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample/kfp-sample-data-generator:latest
+    exec-evaluator-container-op:
+      container:
+        args:
+        - --trained-model
+        - '{{$.inputs.artifacts[''trained_model''].path}}'
+        - --transformed-eval-data
+        - '{{$.inputs.artifacts[''transformed_eval_data''].path}}'
+        - --confusion-matrix-path
+        - '{{$.outputs.artifacts[''confusion_matrix''].path}}'
+        - --metrics-path
+        - '{{$.outputs.artifacts[''metrics''].path}}'
+        - --suffix
+        - '{{$.inputs.parameters[''suffix'']}}'
+        command:
+        - python
+        - -m
+        - evaluator_cli
+        image: asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample/kfp-sample-evaluator:latest
+    exec-trainer-container-op:
+      container:
+        args:
+        - --transformed-train-data
+        - '{{$.inputs.artifacts[''transformed_train_data''].path}}'
+        - --trained-model
+        - '{{$.outputs.artifacts[''trained_model''].path}}'
+        - --suffix
+        - '{{$.inputs.parameters[''suffix'']}}'
+        - --n-estimators
+        - '{{$.inputs.parameters[''n_estimators'']}}'
+        - --random-state
+        - '{{$.inputs.parameters[''random_state'']}}'
+        command:
+        - python
+        - -m
+        - trainer_cli
+        image: asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample/kfp-sample-trainer:latest
+    exec-transform-container-op:
+      container:
+        args:
+        - --train-data
+        - '{{$.inputs.artifacts[''train_data''].path}}'
+        - --eval-data
+        - '{{$.inputs.artifacts[''eval_data''].path}}'
+        - --transformed-train-data
+        - '{{$.outputs.artifacts[''transformed_train_data''].path}}'
+        - --transformed-eval-data
+        - '{{$.outputs.artifacts[''transformed_eval_data''].path}}'
+        - --suffix
+        - '{{$.inputs.parameters[''suffix'']}}'
+        command:
+        - python
+        - -m
+        - transform_cli
+        image: asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample/kfp-sample-transform:latest
+pipelineInfo:
+  description: Palmer Penguins classification pipeline using CLI container components
+  name: penguin-classification-container-pipeline
+root:
+  dag:
+    tasks:
+      data-generator-container-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-data-generator-container-op
+        inputs:
+          parameters:
+            dataset_url:
+              componentInputParameter: dataset_url
+            random_state:
+              componentInputParameter: random_state
+        taskInfo:
+          name: data-generator-container-op
+      evaluator-container-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-evaluator-container-op
+        dependentTasks:
+        - trainer-container-op
+        - transform-container-op
+        inputs:
+          artifacts:
+            trained_model:
+              taskOutputArtifact:
+                outputArtifactKey: trained_model
+                producerTask: trainer-container-op
+            transformed_eval_data:
+              taskOutputArtifact:
+                outputArtifactKey: transformed_eval_data
+                producerTask: transform-container-op
+          parameters:
+            suffix:
+              componentInputParameter: suffix
+        taskInfo:
+          name: evaluator-container-op
+      trainer-container-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-trainer-container-op
+        dependentTasks:
+        - transform-container-op
+        inputs:
+          artifacts:
+            transformed_train_data:
+              taskOutputArtifact:
+                outputArtifactKey: transformed_train_data
+                producerTask: transform-container-op
+          parameters:
+            n_estimators:
+              componentInputParameter: n_estimators
+            random_state:
+              componentInputParameter: random_state
+            suffix:
+              componentInputParameter: suffix
+        taskInfo:
+          name: trainer-container-op
+      transform-container-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-transform-container-op
+        dependentTasks:
+        - data-generator-container-op
+        inputs:
+          artifacts:
+            eval_data:
+              taskOutputArtifact:
+                outputArtifactKey: eval_data
+                producerTask: data-generator-container-op
+            train_data:
+              taskOutputArtifact:
+                outputArtifactKey: train_data
+                producerTask: data-generator-container-op
+          parameters:
+            suffix:
+              componentInputParameter: suffix
+        taskInfo:
+          name: transform-container-op
+  inputDefinitions:
+    parameters:
+      dataset_url:
+        defaultValue: https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv
+        isOptional: true
+        parameterType: STRING
+      n_estimators:
+        defaultValue: 100.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      random_state:
+        defaultValue: 42.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      suffix:
+        defaultValue: _xf
+        isOptional: true
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.17.0

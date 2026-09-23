@@ -1,0 +1,436 @@
+# PIPELINE DEFINITION
+# Name: penguin-classification-component-pipeline
+# Description: Palmer Penguins classification pipeline using native KFP v2 components and visualizations
+# Inputs:
+#    dataset_url: str [Default: 'https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv']
+#    n_estimators: int [Default: 100.0]
+#    random_state: int [Default: 42.0]
+#    suffix: str [Default: '_xf']
+components:
+  comp-data-generator-op:
+    executorLabel: exec-data-generator-op
+    inputDefinitions:
+      parameters:
+        dataset_url:
+          defaultValue: https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv
+          description: Remote URL or path to download raw dataset.
+          isOptional: true
+          parameterType: STRING
+        random_state:
+          defaultValue: 42.0
+          description: 'Random seed for reproducible partitioning (default: 42).'
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        test_size:
+          defaultValue: 0.2
+          description: 'Evaluation split ratio (default: 0.2).'
+          isOptional: true
+          parameterType: NUMBER_DOUBLE
+    outputDefinitions:
+      artifacts:
+        eval_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        train_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+  comp-evaluate-model-op:
+    executorLabel: exec-evaluate-model-op
+    inputDefinitions:
+      artifacts:
+        trained_model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+          description: Input trained model artifact handle.
+        transformed_eval_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+          description: Input preprocessed evaluation dataset artifact handle.
+      parameters:
+        suffix:
+          defaultValue: _xf
+          description: 'Feature transformation suffix (default: ''_xf'').'
+          isOptional: true
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        classification_metrics:
+          artifactType:
+            schemaTitle: system.ClassificationMetrics
+            schemaVersion: 0.0.1
+        metrics:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+  comp-train-model-op:
+    executorLabel: exec-train-model-op
+    inputDefinitions:
+      artifacts:
+        transformed_train_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+          description: Input preprocessed dataset artifact.
+      parameters:
+        n_estimators:
+          defaultValue: 100.0
+          description: 'Number of trees in RandomForest (default: 100).'
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        random_state:
+          defaultValue: 42.0
+          description: 'Random seed for reproducibility (default: 42).'
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        suffix:
+          defaultValue: _xf
+          description: 'Feature transformation suffix (default: ''_xf'').'
+          isOptional: true
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        trained_model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+  comp-transform-op:
+    executorLabel: exec-transform-op
+    inputDefinitions:
+      artifacts:
+        eval_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+          description: Input evaluation dataset artifact produced by upstream component.
+        train_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+          description: Input training dataset artifact produced by upstream component.
+      parameters:
+        suffix:
+          defaultValue: _xf
+          description: 'Suffix string appended to all column headers (default: ''_xf'').'
+          isOptional: true
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        transformed_eval_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+        transformed_train_data:
+          artifactType:
+            schemaTitle: system.Dataset
+            schemaVersion: 0.0.1
+deploymentSpec:
+  executors:
+    exec-data-generator-op:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - data_generator_op
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.17.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef data_generator_op(\n    train_data: Output[Dataset],\n    eval_data:\
+          \ Output[Dataset],\n    dataset_url: str = DEFAULT_DATASET_URI,\n    test_size:\
+          \ float = 0.2,\n    random_state: int = 42,\n):\n    \"\"\"Fetch Palmer\
+          \ Penguins dataset, partition into train/eval sets, and log row metadata.\n\
+          \n    When running on Vertex AI Pipelines, the orchestrator allocates a\
+          \ unique Cloud Storage\n    staging path for each `Output[Dataset]` placeholder\
+          \ before container launch and passes\n    it via `train_data.path` and `eval_data.path`.\n\
+          \n    Args:\n        train_data: Output artifact handle where training partition\
+          \ CSV will be written.\n        eval_data: Output artifact handle where\
+          \ evaluation partition CSV will be written.\n        dataset_url: Remote\
+          \ URL or path to download raw dataset.\n        test_size: Evaluation split\
+          \ ratio (default: 0.2).\n        random_state: Random seed for reproducible\
+          \ partitioning (default: 42).\n    \"\"\"\n    # In-function import pattern:\
+          \ keeps core logic isolated and prevents host environment\n    # dependency\
+          \ pollution during pipeline DAG compilation (AST serialization).\n    from\
+          \ data_generator import generate_data\n\n    metrics = generate_data(\n\
+          \        train_data_output_path=train_data.path,\n        eval_data_output_path=eval_data.path,\n\
+          \        dataset_url=dataset_url,\n        test_size=test_size,\n      \
+          \  random_state=random_state,\n    )\n\n    # Record operational metadata\
+          \ into Vertex AI ML Metadata (MLMD).\n    # These properties become visible\
+          \ and queryable in the Vertex Pipelines UI.\n    train_data.metadata[\"\
+          rows\"] = metrics[\"train_rows\"]\n    eval_data.metadata[\"rows\"] = metrics[\"\
+          eval_rows\"]\n\n"
+        image: asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample/kfp-sample-data-generator:latest
+    exec-evaluate-model-op:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - evaluate_model_op
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.17.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef evaluate_model_op(\n    trained_model: Input[Model],\n    transformed_eval_data:\
+          \ Input[Dataset],\n    metrics: Output[Metrics],\n    classification_metrics:\
+          \ Output[ClassificationMetrics],\n    suffix: str = \"_xf\",\n):\n    \"\
+          \"\"Evaluate trained model and log metrics & interactive confusion matrix.\n\
+          \n    This component logs evaluation outcomes directly into Vertex AI Pipelines:\n\
+          \    1. `metrics.log_metric(\"accuracy\", ...)` stores the scalar accuracy\
+          \ in Vertex MLMD,\n       allowing pipeline runs to be compared side-by-side\
+          \ in the Vertex AI console.\n    2. `classification_metrics.log_confusion_matrix(...)`\
+          \ renders an interactive\n       confusion matrix widget directly within\
+          \ the Vertex AI Pipelines execution graph UI.\n\n    Args:\n        trained_model:\
+          \ Input trained model artifact handle.\n        transformed_eval_data: Input\
+          \ preprocessed evaluation dataset artifact handle.\n        metrics: Output\
+          \ scalar metrics artifact handle for MLMD tracking.\n        classification_metrics:\
+          \ Output visualization artifact handle for interactive UI.\n        suffix:\
+          \ Feature transformation suffix (default: '_xf').\n    \"\"\"\n    # In-function\
+          \ import pattern ensures container runtime isolation and clean AST compilation.\n\
+          \    from evaluator import evaluate_model\n\n    results = evaluate_model(\n\
+          \        trained_model_path=trained_model.path,\n        transformed_eval_data_path=transformed_eval_data.path,\n\
+          \        suffix=suffix,\n    )\n\n    # 1. Log scalar accuracy metric to\
+          \ Vertex ML Metadata\n    metrics.log_metric(\"accuracy\", results[\"accuracy\"\
+          ])\n\n    # 2. Log interactive confusion matrix to Vertex AI visualization\
+          \ tab\n    classification_metrics.log_confusion_matrix(\n        results[\"\
+          categories\"],\n        results[\"confusion_matrix\"],\n    )\n\n"
+        image: asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample/kfp-sample-evaluator:latest
+    exec-train-model-op:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - train_model_op
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.17.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef train_model_op(\n    transformed_train_data: Input[Dataset],\n\
+          \    trained_model: Output[Model],\n    suffix: str = \"_xf\",\n    n_estimators:\
+          \ int = 100,\n    random_state: int = 42,\n):\n    \"\"\"Train RandomForestClassifier\
+          \ on preprocessed training data and record model metadata.\n\n    The KFP\
+          \ orchestrator generates a designated GCS URI for `Output[Model]`. During\
+          \ execution,\n    the container receives a local mount path (`trained_model.path`)\
+          \ where the pickle is serialized,\n    which is then automatically uploaded\
+          \ to Cloud Storage by the KFP node daemon.\n\n    Args:\n        transformed_train_data:\
+          \ Input preprocessed dataset artifact.\n        trained_model: Output model\
+          \ artifact handle.\n        suffix: Feature transformation suffix (default:\
+          \ '_xf').\n        n_estimators: Number of trees in RandomForest (default:\
+          \ 100).\n        random_state: Random seed for reproducibility (default:\
+          \ 42).\n    \"\"\"\n    # In-function import pattern ensures container runtime\
+          \ isolation and clean AST compilation.\n    from trainer import train_model\n\
+          \n    meta = train_model(\n        train_data_path=transformed_train_data.path,\n\
+          \        model_output_path=trained_model.path,\n        suffix=suffix,\n\
+          \        n_estimators=n_estimators,\n        random_state=random_state,\n\
+          \    )\n\n    # Populate Vertex AI ML Metadata (MLMD) properties.\n    #\
+          \ These properties are recorded in the Vertex AI Model Registry / Metadata\
+          \ store.\n    trained_model.metadata[\"framework\"] = meta[\"framework\"\
+          ]\n    trained_model.metadata[\"algorithm\"] = meta[\"algorithm\"]\n   \
+          \ trained_model.metadata[\"n_samples\"] = meta[\"n_samples\"]\n    trained_model.metadata[\"\
+          n_estimators\"] = n_estimators\n    trained_model.metadata[\"random_state\"\
+          ] = random_state\n\n"
+        image: asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample/kfp-sample-trainer:latest
+    exec-transform-op:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - transform_op
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.17.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef transform_op(\n    train_data: Input[Dataset],\n    eval_data:\
+          \ Input[Dataset],\n    transformed_train_data: Output[Dataset],\n    transformed_eval_data:\
+          \ Output[Dataset],\n    suffix: str = \"_xf\",\n):\n    \"\"\"Transform\
+          \ dataset column names with a specified suffix and log metadata.\n\n   \
+          \ Args:\n        train_data: Input training dataset artifact produced by\
+          \ upstream component.\n        eval_data: Input evaluation dataset artifact\
+          \ produced by upstream component.\n        transformed_train_data: Output\
+          \ artifact handle for preprocessed training dataset.\n        transformed_eval_data:\
+          \ Output artifact handle for preprocessed evaluation dataset.\n        suffix:\
+          \ Suffix string appended to all column headers (default: '_xf').\n    \"\
+          \"\"\n    # In-function import pattern ensures component self-containment\
+          \ in isolated container environments.\n    from transform import transform_data\n\
+          \n    metrics = transform_data(\n        train_data_path=train_data.path,\n\
+          \        eval_data_path=eval_data.path,\n        transformed_train_output_path=transformed_train_data.path,\n\
+          \        transformed_eval_output_path=transformed_eval_data.path,\n    \
+          \    suffix=suffix,\n    )\n\n    # Attach operational metadata to the output\
+          \ artifacts for lineage tracking in Vertex AI\n    transformed_train_data.metadata[\"\
+          rows\"] = metrics[\"train_rows\"]\n    transformed_train_data.metadata[\"\
+          suffix\"] = suffix\n    transformed_eval_data.metadata[\"rows\"] = metrics[\"\
+          eval_rows\"]\n    transformed_eval_data.metadata[\"suffix\"] = suffix\n\n"
+        image: asia-northeast1-docker.pkg.dev/your-sample-pipeline-project/kfp-sample/kfp-sample-transform:latest
+pipelineInfo:
+  description: Palmer Penguins classification pipeline using native KFP v2 components
+    and visualizations
+  name: penguin-classification-component-pipeline
+root:
+  dag:
+    tasks:
+      data-generator-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-data-generator-op
+        inputs:
+          parameters:
+            dataset_url:
+              componentInputParameter: dataset_url
+            random_state:
+              componentInputParameter: random_state
+        taskInfo:
+          name: data-generator-op
+      evaluate-model-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-evaluate-model-op
+        dependentTasks:
+        - train-model-op
+        - transform-op
+        inputs:
+          artifacts:
+            trained_model:
+              taskOutputArtifact:
+                outputArtifactKey: trained_model
+                producerTask: train-model-op
+            transformed_eval_data:
+              taskOutputArtifact:
+                outputArtifactKey: transformed_eval_data
+                producerTask: transform-op
+          parameters:
+            suffix:
+              componentInputParameter: suffix
+        taskInfo:
+          name: evaluate-model-op
+      train-model-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-train-model-op
+        dependentTasks:
+        - transform-op
+        inputs:
+          artifacts:
+            transformed_train_data:
+              taskOutputArtifact:
+                outputArtifactKey: transformed_train_data
+                producerTask: transform-op
+          parameters:
+            n_estimators:
+              componentInputParameter: n_estimators
+            random_state:
+              componentInputParameter: random_state
+            suffix:
+              componentInputParameter: suffix
+        taskInfo:
+          name: train-model-op
+      transform-op:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-transform-op
+        dependentTasks:
+        - data-generator-op
+        inputs:
+          artifacts:
+            eval_data:
+              taskOutputArtifact:
+                outputArtifactKey: eval_data
+                producerTask: data-generator-op
+            train_data:
+              taskOutputArtifact:
+                outputArtifactKey: train_data
+                producerTask: data-generator-op
+          parameters:
+            suffix:
+              componentInputParameter: suffix
+        taskInfo:
+          name: transform-op
+  inputDefinitions:
+    parameters:
+      dataset_url:
+        defaultValue: https://storage.googleapis.com/download.tensorflow.org/data/palmer_penguins/penguins_processed.csv
+        isOptional: true
+        parameterType: STRING
+      n_estimators:
+        defaultValue: 100.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      random_state:
+        defaultValue: 42.0
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      suffix:
+        defaultValue: _xf
+        isOptional: true
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.17.0
