@@ -145,35 +145,61 @@ uv run python pipeline_component.py
 
 ## Run on Vertex AI Pipelines
 
-### Option A: Using Google Cloud CLI
+Google Cloud Vertex AI Pipelines executes compiled pipeline specifications using the Vertex AI Python SDK (`google.cloud.aiplatform.PipelineJob`).
+
+This repository provides two ways to submit pipeline jobs:
+1. **Option A: Generic Runner Script (`run_pipeline.py`)** (Command-line friendly)
+2. **Option B: Direct Python SDK** (Custom scripts, notebooks, or automation)
+
+### Option A: Using Generic Runner Script (`run_pipeline.py`)
+
+A decoupled, sample runner script `run_pipeline.py` is included in the repository. It accepts standard flags or reads environment variables, and delegates parameter defaults to the compiled YAML without requiring script edits when pipeline parameters change.
+
+Run with environment variables:
 
 ```shell
-gcloud ai pipelines run \
-    --display-name="penguin-classification-run" \
-    --template-path="kfp_component_pipeline.yaml" \
-    --location="asia-northeast1" \
-    --pipeline-root="gs://YOUR_BUCKET_NAME/pipeline_root" \
-    --parameters="suffix=_xf"
+export GCP_PROJECT_ID=$(gcloud config get-value project)
+export GCP_REGION="asia-northeast1"
+export BUCKET_NAME="${GCP_PROJECT_ID}-kfp-root"
+
+# Run Container Pipeline
+uv run python run_pipeline.py --template kfp_container_pipeline.yaml
+
+# Run Native Component Pipeline
+uv run python run_pipeline.py --template kfp_component_pipeline.yaml
 ```
 
-### Option B: Using Python SDK
+Alternatively, pass all options via explicit CLI arguments:
+
+```shell
+uv run python run_pipeline.py \
+    --template kfp_container_pipeline.yaml \
+    --project "your-gcp-project-id" \
+    --location "asia-northeast1" \
+    --pipeline-root "gs://your-bucket-name/pipeline_root" \
+    --display-name "penguin-pipeline-run"
+```
+
+### Option B: Using Python SDK Directly
+
+For custom automation, CI/CD, or Python notebooks, use the `google.cloud.aiplatform` SDK directly:
 
 ```python
 from google.cloud import aiplatform
 
-aiplatform.init(project="your-project-id", location="asia-northeast1")
+aiplatform.init(
+    project="your-gcp-project-id",
+    location="asia-northeast1",
+)
 
 job = aiplatform.PipelineJob(
     display_name="penguin-classification-run",
-    template_path="kfp_component_pipeline.yaml",
-    pipeline_root="gs://YOUR_BUCKET_NAME/pipeline_root",
-    parameter_values={
-        "suffix": "_xf",
-        "n_estimators": 100,
-        "random_state": 42,
-    },
+    template_path="kfp_container_pipeline.yaml",
+    pipeline_root="gs://your-bucket-name/pipeline_root",
     enable_caching=True,
 )
 
 job.submit()
 ```
+
+When submitted, Vertex AI returns a dashboard URL where you can monitor DAG execution, step status, and MLMD artifacts in real time.
