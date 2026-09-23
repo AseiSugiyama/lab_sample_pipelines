@@ -7,7 +7,7 @@ enabling fast in-memory execution and unit testing.
 """
 
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, cast
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
@@ -65,7 +65,7 @@ def split_dataset(
         test_size=test_size,
         random_state=random_state,
     )
-    return train_df, eval_df
+    return cast(Tuple[pd.DataFrame, pd.DataFrame], (train_df, eval_df))
 
 
 def generate_data(

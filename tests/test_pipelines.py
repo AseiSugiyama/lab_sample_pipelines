@@ -11,7 +11,7 @@ def test_container_pipeline_compilation(tmp_path):
     """Verify that container pipeline compiles into valid KFP v2 PipelineSpec YAML."""
     out_yaml = tmp_path / "kfp_container_pipeline.yaml"
     compiler.Compiler().compile(
-        pipeline_func=penguin_container_pipeline,
+        pipeline_func=penguin_container_pipeline,  # pyright: ignore[reportArgumentType]
         package_path=str(out_yaml),
     )
 
@@ -32,7 +32,7 @@ def test_component_pipeline_compilation(tmp_path):
     """Verify that component pipeline compiles into valid KFP v2 PipelineSpec YAML."""
     out_yaml = tmp_path / "kfp_component_pipeline.yaml"
     compiler.Compiler().compile(
-        pipeline_func=penguin_component_pipeline,
+        pipeline_func=penguin_component_pipeline,  # pyright: ignore[reportArgumentType]
         package_path=str(out_yaml),
     )
 

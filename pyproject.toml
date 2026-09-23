@@ -34,3 +34,13 @@ pythonpath = [
     "components/trainer/src",
     "components/evaluator/src",
 ]
+
+[tool.pyright]
+include = ["."]
+extraPaths = [
+    ".",
+    "components/data_generator/src",
+    "components/transform/src",
+    "components/trainer/src",
+    "components/evaluator/src",
+]

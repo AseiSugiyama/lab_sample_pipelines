@@ -33,9 +33,9 @@ def data_generator_container_op(
             "--dataset-url",
             dataset_url,
             "--test-size",
-            test_size,
+            str(test_size),
             "--random-state",
-            random_state,
+            str(random_state),
         ],
     )
 
@@ -87,9 +87,9 @@ def trainer_container_op(
             "--suffix",
             suffix,
             "--n-estimators",
-            n_estimators,
+            str(n_estimators),
             "--random-state",
-            random_state,
+            str(random_state),
         ],
     )
 
@@ -159,7 +159,7 @@ def penguin_container_pipeline(
 
 if __name__ == "__main__":
     compiler.Compiler().compile(
-        pipeline_func=penguin_container_pipeline,
+        pipeline_func=penguin_container_pipeline,  # pyright: ignore[reportArgumentType]
         package_path="kfp_container_pipeline.yaml",
     )
     print("Compiled container pipeline to kfp_container_pipeline.yaml")

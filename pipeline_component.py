@@ -1,3 +1,4 @@
+# pyright: reportCallIssue=false
 """Route 2: KFP Native Component Pipeline.
 
 Connects native KFP components leveraging Vertex AI lineage, metadata, and rich visualizations.
@@ -48,7 +49,7 @@ def penguin_component_pipeline(
 
 if __name__ == "__main__":
     compiler.Compiler().compile(
-        pipeline_func=penguin_component_pipeline,
+        pipeline_func=penguin_component_pipeline,  # pyright: ignore[reportArgumentType]
         package_path="kfp_component_pipeline.yaml",
     )
     print("Compiled component pipeline to kfp_component_pipeline.yaml")

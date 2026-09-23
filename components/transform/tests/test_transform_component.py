@@ -1,5 +1,6 @@
 """Tests for transform KFP component adapter."""
 
+from typing import Any
 import pandas as pd
 from transform_component import transform_op
 from kfp.dsl import Dataset
@@ -7,7 +8,8 @@ from kfp.dsl import Dataset
 
 def test_transform_component_spec():
     """Verify component specification, inputs, outputs, and base image."""
-    spec = transform_op.component_spec
+    op: Any = transform_op
+    spec = op.component_spec
     assert "transform" in spec.name
     assert "train_data" in spec.inputs
     assert "eval_data" in spec.inputs
@@ -33,7 +35,8 @@ def test_transform_component_execution(tmp_path):
     transformed_train_ds = Dataset(name="transformed_train_data", uri=str(train_out))
     transformed_eval_ds = Dataset(name="transformed_eval_data", uri=str(eval_out))
 
-    transform_op.python_func(
+    op: Any = transform_op
+    op.python_func(
         train_data=train_ds,
         eval_data=eval_ds,
         transformed_train_data=transformed_train_ds,
