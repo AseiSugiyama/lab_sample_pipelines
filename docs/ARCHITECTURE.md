@@ -433,7 +433,29 @@ def penguin_component_pipeline(
     )
 ```
 
-### 4.3 パイプラインコンパイルと IR YAML の生成仕様
+### 4.3 評価メトリクスと混同行列可視化の設計（ClassificationMetrics の制約と棲み分け）
+
+モデル評価ステップ（Evaluator）における評価指標および混同行列（Confusion Matrix）の出力は、Container Pipeline と Component Pipeline の設計思想の違いが最も色濃く現れる部分です。
+
+#### 1. KFP v2 における ClassificationMetrics の動作メカニズム
+KFP v2 で Vertex AI コンソール上に対話的な混同行列ウィジェットを描画するには、`kfp.dsl.ClassificationMetrics` 型の出力アーティファクトに対して `classification_metrics.log_confusion_matrix(categories, matrix)` を呼び出す必要があります。
+このメソッドは内部的に、Vertex AI MLMD（機械学習メタデータ）が解釈可能なメタデータ構造（`{"confusionMatrix": {"annotationSpecs": [...], "rows": [...]}}`）を構築し、アーティファクトのメタデータ辞書に格納します。
+
+#### 2. CLI / Container Component における制約事項
+`@dsl.container_component` を用いた Container Pipeline では、以下の構造的制約が存在します：
+- 【引数がファイルパス文字列である点】:
+  CLI エントリポイント（`evaluator_cli.py`）がターミナル引数として受け取るのは `--confusion-matrix-path /path/to/confusion_matrix` という単なるファイルパス文字列（`str`）です。Python インスタンスとしての `ClassificationMetrics` オブジェクトが存在しないため、`log_confusion_matrix()` メソッドを直接呼び出すことができません。
+- 【フレームワーク独立性（ポータビリティ）とのトレードオフ】:
+  CLI 側で混同行列ウィジェットを描画させようとする場合、CLI スクリプト内で KFP SDK をインポートしてオブジェクトを自前でインスタンス化するか、Vertex AI 固有の内部 JSON スキーマを手動で組み立てて出力ファイルに書き出す必要があります。しかしこれを行うと、「KFP やクラウド環境に依存せず、Docker 単体やローカルでも動く純粋な Python スクリプトである」という CLI 本来のポータビリティが破壊されてしまいます。
+
+#### 3. 本リポジトリにおける設計判断と棲み分け
+以上のトレードオフを踏まえ、本リポジトリでは以下のように明確な役割分担を行っています：
+- 【Container Pipeline（`pipeline_container.py` / CLI 方式）】:
+  コンテナおよび CLI のポータビリティを最優先とし、標準的な画像ファイル（matplotlib による PNG 形式）および汎用 Metrics JSON を出力します。Docker 単体で実行した場合でも画像ビューア等で結果を即座に確認可能です。
+- 【Component Pipeline（`pipeline_component.py` / ネイティブ方式）】:
+  KFP v2 の型システムと Vertex AI Pipelines の UI 統合を最優先とし、`Output[ClassificationMetrics]` と `log_confusion_matrix()` を使用して、Vertex AI コンソール上にリッチな対話的混同行列ウィジェットを直接レンダリングします。
+
+### 4.4 パイプラインコンパイルと IR YAML の生成仕様
 KFP SDK v2 の `kfp.compiler.Compiler` を用いて、Python で定義したパイプライン DAG を Vertex AI / KFP 互換の Intermediate Representation（IR YAML）仕様ファイルへとコンパイルします。
 
 `pipeline_container.py` をコンパイルすると `kfp_container_pipeline.yaml` が生成され、`pipeline_component.py` をコンパイルすると `kfp_component_pipeline.yaml` が生成されます。

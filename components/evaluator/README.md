@@ -4,14 +4,28 @@ The Evaluator component calculates accuracy as a score of the trained model and 
 
 ## Runtime Inputs and Returns
 
+### CLI Interface (evaluator_cli.py / Container Pipeline)
 - Inputs:
-  - transformed_eval_data_path [str]: Path to saved train data.
-  - trained_model_path [str]: Path to trained model.
-  - suffix [str]: Suffix to add each column name.
+  - `--transformed-eval-data` [str]: Path to preprocessed evaluation CSV.
+  - `--trained-model` [str]: Path to trained model pickle.
+  - `--suffix` [str]: Column name suffix (default: `_xf`).
 - Outputs:
-  - confusion_matrix_path [str]: Path to save a confusion matrix (PNG).
-- Metrics
-  - mlpipeline_metrics [float]: Accuracy score.
+  - `--confusion-matrix-path` [str]: Path to save static confusion matrix plot (PNG).
+  - `--metrics-path` [str]: Path to save scalar metrics JSON (`{"metrics": [...]}`).
+
+### Native KFP Component Interface (evaluator_component.py / Component Pipeline)
+- Inputs:
+  - `trained_model`: Input[Model]
+  - `transformed_eval_data`: Input[Dataset]
+  - `suffix`: str (default: `_xf`)
+- Outputs:
+  - `metrics`: Output[Metrics] (logs accuracy scalar to Vertex MLMD)
+  - `classification_metrics`: Output[ClassificationMetrics] (renders interactive confusion matrix widget in Vertex AI console)
+
+### Note on Confusion Matrix and ClassificationMetrics
+- CLI-based container components receive simple filesystem path strings (`str`) rather than Python KFP object handles. Calling `classification_metrics.log_confusion_matrix(...)` directly from the CLI is not supported without embedding KFP-internal JSON schemas or KFP dependencies into the standalone container.
+- To maintain container portability (allowing `evaluator_cli.py` to run independently in plain Docker or local environments), the CLI outputs a standard PNG image and metrics JSON.
+- If rich interactive confusion matrix visualization in the Vertex AI console is required, use the native KFP component adapter (`evaluator_component.py` via `pipeline_component.py`).
 
 ## Files
 
