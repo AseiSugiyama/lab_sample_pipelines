@@ -1,0 +1,16 @@
+[project]
+name = "kfp-sample-evaluator"
+version = "0.1.0"
+description = "Evaluator component for Palmer Penguins classification pipeline"
+requires-python = ">=3.14"
+dependencies = [
+    "matplotlib>=3.10.0",
+    "numpy>=2.2.0",
+    "pandas>=2.2.0",
+    "scikit-learn>=1.6.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.0",
+]

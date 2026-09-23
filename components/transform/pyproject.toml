@@ -1,0 +1,14 @@
+[project]
+name = "kfp-sample-transform"
+version = "0.1.0"
+description = "Transform component for Palmer Penguins classification pipeline"
+requires-python = ">=3.14"
+dependencies = [
+    "numpy>=2.2.0",
+    "pandas>=2.2.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.0",
+]

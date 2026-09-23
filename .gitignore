@@ -210,4 +210,6 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-
+# KFP compiled pipelines
+kfp_*_pipeline.yaml
+kfp_*_pipeline.json
