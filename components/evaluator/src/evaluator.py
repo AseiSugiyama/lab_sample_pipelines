@@ -9,7 +9,7 @@ and metrics JSON files for standalone CLI execution.
 import json
 from pathlib import Path
 import pickle
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -25,7 +25,7 @@ def evaluate_model(
     confusion_matrix_output_path: Optional[str] = None,
     metrics_output_path: Optional[str] = None,
     suffix: str = "_xf",
-) -> Dict[str, object]:
+) -> Dict[str, Any]:
     """Evaluate trained model on evaluation dataset, generating metrics and confusion matrix.
 
     Args:

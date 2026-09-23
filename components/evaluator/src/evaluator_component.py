@@ -52,10 +52,10 @@ def evaluate_model_op(
     )
 
     # 1. Log scalar accuracy metric to Vertex ML Metadata
-    metrics.log_metric("accuracy", results["accuracy"])
+    metrics.log_metric("accuracy", float(results["accuracy"]))
 
     # 2. Log interactive confusion matrix to Vertex AI visualization tab
     classification_metrics.log_confusion_matrix(
-        results["categories"],
-        results["confusion_matrix"],
+        categories=list(results["categories"]),
+        matrix=list(results["confusion_matrix"]),
     )

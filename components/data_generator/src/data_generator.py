@@ -60,12 +60,12 @@ def split_dataset(
             f"Target column '{TARGET_COLUMN}' not found in dataframe. "
             f"Available columns: {list(df.columns)}"
         )
-    train_df, eval_df = train_test_split(
+    train_df, eval_df = train_test_split(  # pyright: ignore[reportAssignmentType]
         df,
         test_size=test_size,
         random_state=random_state,
     )
-    return train_df, eval_df
+    return train_df, eval_df  # pyright: ignore[reportReturnType]
 
 
 def generate_data(

@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import pickle
+from typing import Any
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from evaluator_component import evaluate_model_op
@@ -10,7 +11,9 @@ from kfp.dsl import Dataset, Model, Metrics, ClassificationMetrics
 
 def test_evaluator_component_spec():
     """Verify component specification, inputs, outputs, and base image."""
-    spec = evaluate_model_op.component_spec
+    # KFP's @dsl.component dynamically attaches .component_spec and .python_func at runtime
+    op: Any = evaluate_model_op
+    spec = op.component_spec
     assert "evaluate" in spec.name
     assert "trained_model" in spec.inputs
     assert "transformed_eval_data" in spec.inputs
@@ -45,7 +48,9 @@ def test_evaluator_component_execution(tmp_path):
         name="classification_metrics", uri=str(tmp_path / "cm.json")
     )
 
-    evaluate_model_op.python_func(
+    # Access underlying python_func dynamically attached by @dsl.component
+    op: Any = evaluate_model_op
+    op.python_func(
         trained_model=trained_model,
         transformed_eval_data=eval_ds,
         metrics=metrics,
